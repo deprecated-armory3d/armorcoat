@@ -35,18 +35,20 @@ class UINodes extends armory.Trait {
 
 			iron.data.Data.getBlob('default_material.json', function(b:kha.Blob) {
 
-				canvas = haxe.Json.parse(b.toString());
-				parseMaterial();
+				kha.Assets.loadImage('color_wheel', function(image:kha.Image) {
 
-				font = f;
-				var t = Reflect.copy(zui.Themes.dark);
-				t.FILL_WINDOW_BG = true;
-				t._ELEMENT_H = 18;
-				t._BUTTON_H = 16;
-				// ui = new Zui({font: f, theme: t, scaleFactor: 2.5}); ////
-				ui = new Zui({font: f, theme: t});
-				ui.scrollEnabled = false;
-				armory.Scene.active.notifyOnInit(sceneInit);
+					canvas = haxe.Json.parse(b.toString());
+
+					font = f;
+					var t = Reflect.copy(zui.Themes.dark);
+					t.FILL_WINDOW_BG = true;
+					t._ELEMENT_H = 18;
+					t._BUTTON_H = 16;
+					// ui = new Zui({font: f, theme: t, scaleFactor: 2.5}); ////
+					ui = new Zui({font: f, theme: t, color_wheel: image});
+					ui.scrollEnabled = false;
+					armory.Scene.active.notifyOnInit(sceneInit);
+				});
 			});
 		});
 	}
@@ -60,10 +62,23 @@ class UINodes extends armory.Trait {
 	var mx = 0.0;
 	var my = 0.0;
 	var wh = 300;
+	static var frame = 0;
+	var mdown = false;
+	var mdownlast = false;
+	var mreleased = false;
+	var mchanged = false;
+	var changed = false;
 	function update() {
+		if (frame == 8) parseMaterial(); // Temp cpp fix
+		frame++;
+
+		var mouse = iron.system.Input.getMouse();
+		mdownlast = mdown;
+		mdown = mouse.down();
+		mreleased = mouse.released();
+
 		if (!show) return;
 		if (!UITrait.uienabled) return;
-		var mouse = iron.system.Input.getMouse();
 		var keyboard = iron.system.Input.getKeyboard();
 
 		wx = 200;
@@ -86,16 +101,12 @@ class UINodes extends armory.Trait {
 		}
 
 		if (keyboard.started("x")) {
-			var n = uinodes.nodeSelected;
-			var i = 0;      
-			while (i < canvas.links.length) {
-				var l = canvas.links[i];
-				if (l.from_id == n.id || l.to_id == n.id) {
-					canvas.links.splice(i, 1);
-				}
-				else i++;
-			}
-			canvas.nodes.remove(n);
+			uinodes.removeNode(uinodes.nodeSelected, canvas);
+			changed = true;
+		}
+
+		if (keyboard.started("p")) {
+			trace(haxe.Json.stringify(canvas));
 		}
 	}
 
@@ -168,7 +179,17 @@ class UINodes extends armory.Trait {
 			ui.g.drawString(title, iron.App.w() - 200 - titlew - 20, wh - titleh - 10);
 			// ui.g.drawString(title, rt.width - titlew - 20, rt.height - titleh - 10); ////
 			
+			// Recompile material on change
+			ui.changed = false;
 			uinodes.nodeCanvas(ui, canvas);
+
+			if (ui.changed && mdownlast) {
+				mchanged = true;
+			}
+			if ((mreleased && mchanged) || changed) {
+				mchanged = changed = false;
+				parseMaterial();
+			}
 		}
 
 		ui.endWindow();
@@ -190,7 +211,7 @@ class UINodes extends armory.Trait {
 				var n:TNode = {
 					id: node_id,
 					name: "Material Output",
-					type: "OUTPUT_MATERIAL",
+					type: "OUTPUT_MATERIAL_PBR",
 					x: getNodeX(),
 					y: getNodeY(),
 					color: 0xffb34f5a,
@@ -198,41 +219,7 @@ class UINodes extends armory.Trait {
 						{
 							id: uinodes.getSocketId(canvas.nodes),
 							node_id: node_id,
-							name: "Surface",
-							type: "SHADER",
-							color: 0xff63c763,
-							default_value: null
-						},
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Displacement",
-							type: "VALUE",
-							color: 0xffa1a1a1,
-							default_value: null
-						}
-					],
-					outputs: [],
-					buttons: []
-				};
-				canvas.nodes.push(n);
-				uinodes.nodeDrag = n;
-				uinodes.nodeSelected = n;
-			}
-			if (ui.button("Diffuse BSDF")) {
-				var node_id = uinodes.getNodeId(canvas.nodes);
-				var n:TNode = {
-					id: node_id,
-					name: "Diffuse BSDF",
-					type: "BSDF_DIFFUSE",
-					x: getNodeX(),
-					y: getNodeY(),
-					color: 0xff4982a0,
-					inputs: [
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Color",
+							name: "Base Color",
 							type: "RGBA",
 							color: 0xffc7c729,
 							default_value: [0.8, 0.8, 0.8, 1.0]
@@ -240,152 +227,7 @@ class UINodes extends armory.Trait {
 						{
 							id: uinodes.getSocketId(canvas.nodes),
 							node_id: node_id,
-							name: "Roughness",
-							type: "VALUE",
-							color: 0xffa1a1a1,
-							default_value: 0.0
-						},
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Normal",
-							type: "VECTOR",
-							color: 0xff6363c7,
-							default_value: [0.0, 0.0, 0.0]
-						}
-					],
-					outputs: [
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "BSDF",
-							type: "SHADER",
-							color: 0xff63c763,
-							default_value: null
-						}
-					],
-					buttons: []
-				};
-				canvas.nodes.push(n);
-				uinodes.nodeDrag = n;
-				uinodes.nodeSelected = n;
-			}
-			if (ui.button("Glossy BSDF")) {
-				var node_id = uinodes.getNodeId(canvas.nodes);
-				var n:TNode = {
-					id: node_id,
-					name: "Glossy BSDF",
-					type: "BSDF_GLOSSY",
-					x: getNodeX(),
-					y: getNodeY(),
-					color: 0xff4982a0,
-					inputs: [
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Color",
-							type: "RGBA",
-							color: 0xffc7c729,
-							default_value: [0.8, 0.8, 0.8, 1.0]
-						},
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Roughness",
-							type: "VALUE",
-							color: 0xffa1a1a1,
-							default_value: 0.2
-						},
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Normal",
-							type: "VECTOR",
-							color: 0xff6363c7,
-							default_value: [0.0, 0.0, 0.0]
-						}
-					],
-					outputs: [
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "BSDF",
-							type: "SHADER",
-							color: 0xff63c763,
-							default_value: null
-						}
-					],
-					buttons: []
-				};
-				canvas.nodes.push(n);
-				uinodes.nodeDrag = n;
-				uinodes.nodeSelected = n;
-			}
-			if (ui.button("Mix Shader")) {
-				var node_id = uinodes.getNodeId(canvas.nodes);
-				var n:TNode = {
-					id: node_id,
-					name: "Mix Shader",
-					type: "MIX_SHADER",
-					x: getNodeX(),
-					y: getNodeY(),
-					color: 0xff4982a0,
-					inputs: [
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Fac",
-							type: "VALUE",
-							color: 0xffa1a1a1,
-							default_value: 0.5
-						},
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Shader",
-							type: "SHADER",
-							color: 0xff63c763,
-							default_value: null
-						},
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Shader",
-							type: "SHADER",
-							color: 0xff63c763,
-							default_value: null
-						}
-					],
-					outputs: [
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "BSDF",
-							type: "SHADER",
-							color: 0xff63c763,
-							default_value: null
-						}
-					],
-					buttons: []
-				};
-				canvas.nodes.push(n);
-				uinodes.nodeDrag = n;
-				uinodes.nodeSelected = n;
-			}
-			if (ui.button("Normal Map")) {
-				var node_id = uinodes.getNodeId(canvas.nodes);
-				var n:TNode = {
-					id: node_id,
-					name: "Normal Map",
-					type: "NORMAL_MAP",
-					x: getNodeX(),
-					y: getNodeY(),
-					color: 0xff4982a0,
-					inputs: [
-						{
-							id: uinodes.getSocketId(canvas.nodes),
-							node_id: node_id,
-							name: "Strength",
+							name: "Opacity",
 							type: "VALUE",
 							color: 0xffa1a1a1,
 							default_value: 1.0
@@ -393,22 +235,61 @@ class UINodes extends armory.Trait {
 						{
 							id: uinodes.getSocketId(canvas.nodes),
 							node_id: node_id,
-							name: "Color",
-							type: "RGBA",
-							color: 0xffc7c729,
-							default_value: [0.8, 0.8, 0.8, 1.0]
-						}
-					],
-					outputs: [
+							name: "Occlusion",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 1.0
+						},
 						{
 							id: uinodes.getSocketId(canvas.nodes),
 							node_id: node_id,
-							name: "Normal",
+							name: "Roughness",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.1
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Metallic",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Normal Map",
 							type: "VECTOR",
 							color: 0xff63c763,
-							default_value: [0.0, 0.0, 0.0]
+							default_value: [0.5, 0.5, 1.0]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Emission",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Height",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Subsurface",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
 						}
 					],
+					outputs: [],
 					buttons: []
 				};
 				canvas.nodes.push(n);
@@ -530,10 +411,6 @@ class UINodes extends armory.Trait {
 				uinodes.nodeSelected = n;
 			}
 
-			if (ui.button("Parse")) {
-				parseMaterial();
-			}
-
 			ui.endLayout();
 		}
 
@@ -576,7 +453,6 @@ class UINodes extends armory.Trait {
         vert.add_out('vec3 wnormal');
         vert.write('wnormal = normalize(N * nor);');
         frag.write_main_header('vec3 n = normalize(wnormal);');
-
 
 		var sout = Cycles.parse(canvas, con_mesh, vert, frag, null, null, null, matcon);
 		var base = sout.out_basecol;
@@ -634,13 +510,15 @@ class UINodes extends armory.Trait {
 
 
 	function parseMaterial() {
+		UITrait.dirty = true;
+
 		var mout = false;
-		for (n in canvas.nodes) if (n.type == "OUTPUT_MATERIAL") { mout = true; break; }
+		for (n in canvas.nodes) if (n.type == "OUTPUT_MATERIAL_PBR") { mout = true; break; }
 
 		if (mout) {
 
 			iron.data.Data.getMaterial("Scene", "Material", function(m:iron.data.MaterialData) {
-			
+
 				var mat:TMaterial = {
 					name: "Material",
 					canvas: canvas

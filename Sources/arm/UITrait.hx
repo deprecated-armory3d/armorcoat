@@ -41,10 +41,14 @@ class UITrait extends armory.Trait {
 			zui.Themes.dark.FILL_WINDOW_BG = true;
 			zui.Nodes.getEnumTexts = getEnumTexts;
 			zui.Nodes.mapEnum = mapEnum;
-			ui = new Zui( { font: f } );
-			uimodal = new Zui( { font: f } );
+			ui = new Zui( { font: font } );
+			uimodal = new Zui( { font: font } );
 			// ui = new Zui( { font: f, scaleFactor: 8, theme: zui.Themes.light } ); ////
 			loadBundled(['files'], done);
+		});
+
+		kha.System.notifyOnDropFiles(function(filePath:String) {
+			trace(filePath);
 		});
 	}
 
@@ -57,12 +61,12 @@ class UITrait extends armory.Trait {
 		return "";
 	}
 
-    var currentObject:MeshObject;
+	var currentObject:MeshObject;
 
 	function done() {
 
 		notifyOnInit(function() {
-        	currentObject = cast(iron.Scene.active.getChild("Cube"), MeshObject);
+			currentObject = cast(iron.Scene.active.getChild("Cube"), MeshObject);
 
 			iron.App.notifyOnUpdate(update);
 			iron.App.notifyOnRender2D(render);
@@ -107,12 +111,25 @@ class UITrait extends armory.Trait {
 		uienabled = !showFiles;
 		renderUI(g);
 		renderFiles(g);
+
+		iron.Scene.active.camera.renderPath.ready = showFiles || dirty;
+		dirty = false;
 	}
 
 	var assets:Array<TAsset> = [];
 	var assetNames:Array<String> = [];
 
 	public static var cameraType = 0;
+	var textureRes = 2;
+	function getTextureRes():Int {
+		if (textureRes == 0) return 1024;
+		if (textureRes == 1) return 2048;
+		if (textureRes == 2) return 4096;
+		if (textureRes == 3) return 8192;
+		if (textureRes == 4) return 16384;
+		if (textureRes == 5) return 20480;
+		return 0;
+	}
 
 	function renderUI(g:kha.graphics2.Graphics) {
 		if (!show) return;
@@ -129,9 +146,123 @@ class UITrait extends armory.Trait {
 		
 		if (ui.window(Id.handle(), 0, 0, ww, iron.App.h())) {
 
-			// ui.text("Ready"); // Console
+			if (ui.panel(Id.handle({selected: true}), "PROJECT")) {
+				// ui.row([1/2, 1/2]);
+				// ui.button("Open");
+				// ui.button("Save");
 
-		// if (ui.window(Id.handle(), 0, 0, rt.width, rt.height)) { ////
+				// if (ui.button("Help")) {
+					// showSplash = true;
+				// }
+
+				// if (ui.button("Import Mesh")) {
+				// 	showFiles = true;
+				// 	filesDone = function(path:String) {
+				// 		importMesh(path);
+				// 	}
+				// }
+
+				if (ui.button("Export Textures")) {
+
+					var textureSize = getTextureRes();
+
+					showFiles = true;
+					filesDone = function(path:String) {
+						// var bo = new haxe.io.BytesOutput();
+						// var pixels = texpaint.getPixels();
+						// var rgb = haxe.io.Bytes.alloc(textureSize * textureSize * 3);
+						// // BGRA to RGB
+						// for (i in 0...textureSize * textureSize) {
+						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
+						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
+						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 0));
+						// }
+						// var pngwriter = new arm.format.png.Writer(bo);
+		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+						// // var jpgdata:arm.format.jpg.Data.Data = {
+						// // 	width: textureSize,
+						// // 	height: textureSize,
+						// // 	quality: 80,
+						// // 	pixels: rgb
+						// // };
+						// // var jpgwriter = new arm.format.jpg.Writer(bo);
+						// // jpgwriter.write(jpgdata);
+						// #if kha_krom
+						// Krom.fileSaveBytes(path + "/tex_basecol.png", bo.getBytes().getData());
+						// #end
+
+						// pixels = texpaint_nor.getPixels();
+						// for (i in 0...textureSize * textureSize) {
+						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
+						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
+						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 0));
+						// }
+						// bo = new haxe.io.BytesOutput();
+						// var pngwriter = new arm.format.png.Writer(bo);
+		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+		 //    			#if kha_krom
+		 //    			Krom.fileSaveBytes(path + "/tex_nor.png", bo.getBytes().getData());
+		 //    			#end
+
+		 //    			for (i in 0...textureSize * textureSize) {
+						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 3));
+						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 3));
+						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 3));
+						// }
+						// bo = new haxe.io.BytesOutput();
+						// var pngwriter = new arm.format.png.Writer(bo);
+		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+		 //    			#if kha_krom
+		 //    			Krom.fileSaveBytes(path + "/tex_height.png", bo.getBytes().getData());
+		 //    			#end
+
+		 //    			pixels = texpaint_pack.getPixels(); // occ, rough, met
+		 //    			for (i in 0...textureSize * textureSize) {
+						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
+						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 2));
+						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 2));
+						// }
+						// bo = new haxe.io.BytesOutput();
+						// var pngwriter = new arm.format.png.Writer(bo);
+		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+		 //    			#if kha_krom
+		 //    			Krom.fileSaveBytes(path + "/tex_occ.png", bo.getBytes().getData());
+		 //    			#end
+
+		 //    			for (i in 0...textureSize * textureSize) {
+						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 1));
+						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
+						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 1));
+						// }
+						// bo = new haxe.io.BytesOutput();
+						// var pngwriter = new arm.format.png.Writer(bo);
+		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+		 //    			#if kha_krom
+		 //    			Krom.fileSaveBytes(path + "/tex_rough.png", bo.getBytes().getData());
+		 //    			#end
+
+		 //    			for (i in 0...textureSize * textureSize) {
+						// 	rgb.set(i * 3 + 0, pixels.get(i * 4));
+						// 	rgb.set(i * 3 + 1, pixels.get(i * 4));
+						// 	rgb.set(i * 3 + 2, pixels.get(i * 4));
+						// }
+						// bo = new haxe.io.BytesOutput();
+						// var pngwriter = new arm.format.png.Writer(bo);
+		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+		 //    			#if kha_krom
+		 //    			Krom.fileSaveBytes(path + "/tex_met.png", bo.getBytes().getData());
+		 //    			#end
+					}
+				}
+				var hres = Id.handle({position: textureRes});
+				textureRes = ui.combo(hres, ["1K", "2K", "4K", "8K", "16K", "20K"], "Res", true);
+				// if (hres.changed) {
+					// iron.App.notifyOnRender(resizeTargetsHandler);
+				// }
+				// ui.text("Texture channels");
+			}
+
+			ui.separator();
 
 			if (ui.panel(Id.handle({selected: true}), "ASSETS")) {
 				if (ui.button("Import")) {
