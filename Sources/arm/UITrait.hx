@@ -48,7 +48,19 @@ class UITrait extends armory.Trait {
 		});
 
 		kha.System.notifyOnDropFiles(function(filePath:String) {
-			trace(filePath);
+			importAsset(filePath);
+		});
+	}
+
+	function importAsset(path:String) {
+		if (!StringTools.endsWith(path, ".jpg") && !StringTools.endsWith(path, ".png")) return;
+		
+		iron.data.Data.getImage(path, function(image:kha.Image) {
+			var ar = path.split("/");
+			var name = ar[ar.length - 1];
+			assets.push({image: image, name: name, file: path, id: assetId++});
+			assetNames.push(name);
+			hwnd.redraws = 2;
 		});
 	}
 
@@ -118,6 +130,7 @@ class UITrait extends armory.Trait {
 
 	var assets:Array<TAsset> = [];
 	var assetNames:Array<String> = [];
+	var assetId = 0;
 
 	public static var cameraType = 0;
 	var textureRes = 2;
@@ -131,6 +144,7 @@ class UITrait extends armory.Trait {
 		return 0;
 	}
 
+	var hwnd = Id.handle();
 	function renderUI(g:kha.graphics2.Graphics) {
 		if (!show) return;
 
@@ -144,7 +158,7 @@ class UITrait extends armory.Trait {
 		ui.begin(g);
 		// ui.begin(rt.g2); ////
 		
-		if (ui.window(Id.handle(), 0, 0, ww, iron.App.h())) {
+		if (ui.window(hwnd, 0, 0, ww, iron.App.h())) {
 
 			if (ui.panel(Id.handle({selected: true}), "PROJECT")) {
 				// ui.row([1/2, 1/2]);
@@ -155,12 +169,12 @@ class UITrait extends armory.Trait {
 					// showSplash = true;
 				// }
 
-				// if (ui.button("Import Mesh")) {
-				// 	showFiles = true;
-				// 	filesDone = function(path:String) {
-				// 		importMesh(path);
-				// 	}
-				// }
+				if (ui.button("Import Mesh")) {
+					showFiles = true;
+					filesDone = function(path:String) {
+						importMesh(path);
+					}
+				}
 
 				if (ui.button("Export Textures")) {
 
@@ -268,25 +282,30 @@ class UITrait extends armory.Trait {
 				if (ui.button("Import")) {
 					showFiles = true;
 					filesDone = function(path:String) {
-						iron.data.Data.getImage(path, function(image:kha.Image) {
-							var ar = path.split("/");
-							var name = ar[ar.length - 1];
-							assets.push({image: image, name: name, file: path});
-							assetNames.push(name);
-						});
+						importAsset(path);
 					}
 				}
 
 				if (assets.length > 0) {
-					for (i in 0...assets.length) {
+					var i = 0;
+					while (i < assets.length) {
 						var asset = assets[i];
 						ui.image(asset.image);
-						asset.name = ui.textInput(Id.handle().nest(i, {text: asset.name}), "Name", Right);
+						ui.row([1/8, 7/8]);
+						var b = ui.button("X");
+						asset.name = ui.textInput(Id.handle().nest(asset.id, {text: asset.name}), "", Right);
+						assetNames[i] = asset.name;
+						if (b) {
+							asset.image.unload();
+							assets.splice(i, 1);
+							assetNames.splice(i, 1);
+						}
+						else i++;
 					}
 				}
-				// else {
-					// ui.text("Drag & drop assets here");
-				// }
+				else {
+					ui.text("(Drag & drop assets here)");
+				}
 			}
 			ui.separator();
 		}
@@ -327,5 +346,51 @@ class UITrait extends armory.Trait {
 			showFiles = false;
 		}
 		uimodal.endLayout();
+	}
+
+	function importMesh(path:String) {
+
+		iron.data.Data.getBlob(path, function(b:kha.Blob) {
+
+			var obj = new ObjLoader(b.toString());
+			var pa = new TFloat32Array(obj.indexedVertices.length);
+			for (i in 0...pa.length) pa[i] = obj.indexedVertices[i];
+			var uva = new TFloat32Array(obj.indexedUVs.length);
+			for (i in 0...uva.length) uva[i] = obj.indexedUVs[i];
+			var na = new TFloat32Array(obj.indexedNormals.length);
+			for (i in 0...na.length) na[i] = obj.indexedNormals[i];
+			var ia = new TUint32Array(obj.indices.length);
+			for (i in 0...ia.length) ia[i] = obj.indices[i];
+
+			var raw:TMeshData = {
+				name: "Mesh",
+				vertex_arrays: [
+					{
+						values: pa,
+						attrib: "pos"
+					},
+					{
+						values: na,
+						attrib: "nor"
+					},
+					{
+						values: uva,
+						attrib: "tex"
+					}
+				],
+				index_arrays: [
+					{
+						values: ia,
+						material: 0
+					}
+				]
+			};
+
+			new MeshData(raw, function(md:MeshData) {
+				currentObject.data.delete();
+				// iron.App.notifyOnRender(clearTargetsHandler);
+				currentObject.setData(md);
+			});
+		});
 	}
 }

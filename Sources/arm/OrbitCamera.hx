@@ -2,31 +2,35 @@ package arm;
 
 class OrbitCamera extends armory.Trait {
 
-    public static var enabled = false;
+	public static var enabled = false;
 
-    public function new() {
-        super();
-        
-        notifyOnUpdate(function() {
+	public function new() {
+		super();
+		
+		notifyOnUpdate(function() {
 
-            if (UITrait.cameraType != 0) return;
+			if (UITrait.cameraType != 0) return;
 
-            var mouse = armory.system.Input.getMouse();
-        	var keyboard = armory.system.Input.getKeyboard();
-        	var camera = cast(object, iron.object.CameraObject);
+			var mouse = armory.system.Input.getMouse();
 
-        	if (mouse.wheelDelta != 0) {
-                UITrait.dirty = true;
+			if (mouse.x < UITrait.ww) return;
+			if (UINodes.show && mouse.y > UINodes.wy) return;
 
-	        	camera.move(camera.look(), mouse.wheelDelta * (-0.1));
-	        }
+			var keyboard = armory.system.Input.getKeyboard();
+			var camera = cast(object, iron.object.CameraObject);
 
-	        if (mouse.down("middle") || (mouse.down("right") && keyboard.down("space"))) {
-                UITrait.dirty = true;
+			if (mouse.wheelDelta != 0) {
+				UITrait.dirty = true;
 
-	        	camera.transform.loc.addf(-mouse.movementX / 150, 0.0, mouse.movementY / 150);
-				camera.buildMatrix();
-	        }
-        });
-    }
+				camera.move(camera.look(), mouse.wheelDelta * (-0.1));
+			}
+
+			// if (mouse.down("middle") || (mouse.down("right") && keyboard.down("space"))) {
+			// 	UITrait.dirty = true;
+
+			// 	camera.transform.loc.addf(-mouse.movementX / 150, 0.0, mouse.movementY / 150);
+			// 	camera.buildMatrix();
+			// }
+		});
+	}
 }

@@ -64,7 +64,6 @@ class UINodes extends armory.Trait {
 	var wh = 300;
 	static var frame = 0;
 	var mdown = false;
-	var mdownlast = false;
 	var mreleased = false;
 	var mchanged = false;
 	var changed = false;
@@ -73,9 +72,8 @@ class UINodes extends armory.Trait {
 		frame++;
 
 		var mouse = iron.system.Input.getMouse();
-		mdownlast = mdown;
-		mdown = mouse.down();
 		mreleased = mouse.released();
+		mdown = mouse.down();
 
 		if (!show) return;
 		if (!UITrait.uienabled) return;
@@ -183,8 +181,9 @@ class UINodes extends armory.Trait {
 			ui.changed = false;
 			uinodes.nodeCanvas(ui, canvas);
 
-			if (ui.changed && mdownlast) {
+			if (ui.changed) {
 				mchanged = true;
+				if (!mdown) changed = true;
 			}
 			if ((mreleased && mchanged) || changed) {
 				mchanged = changed = false;
@@ -533,12 +532,20 @@ class UINodes extends armory.Trait {
 						}
 					}
 				}
-
-				if (sc != null) {
-					m.shader.contexts.remove(sc);
-					m.raw.contexts.remove(_matcon);
-					m.contexts.remove(_materialcontext);
+				if (_materialcontext == null) {
+					for (c in m.contexts) {
+						if (c.raw.name == "mesh") {
+							_materialcontext = c;
+							_matcon = c.raw;
+							break;
+						}
+					}
 				}
+
+				m.shader.raw.contexts.remove(sc.raw);
+				m.shader.contexts.remove(sc);
+				m.raw.contexts.remove(_matcon);
+				m.contexts.remove(_materialcontext);
 
 				_matcon = {
 					name: "mesh",
@@ -551,6 +558,7 @@ class UINodes extends armory.Trait {
 				// if (sc == null) {
 					// from_source is synchronous..
 					sc = new iron.data.ShaderData.ShaderContext(cdata, null, function(sc:iron.data.ShaderData.ShaderContext){});
+					m.shader.raw.contexts.push(sc.raw);
 					m.shader.contexts.push(sc);
 					m.raw.contexts.push(_matcon);
 
@@ -558,8 +566,6 @@ class UINodes extends armory.Trait {
 						_materialcontext = self;
 						m.contexts.push(self);
 					});
-
-
 
 					// var dcon = make_depth(_sd);
 					// var dcdata = dcon.data;
