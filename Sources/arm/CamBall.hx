@@ -20,7 +20,10 @@ class CamBall extends Trait {
 	function update() {
 		if (Input.occupied) return;
 		if (!UITrait.uienabled) return;
+		if (UITrait.isScrolling) return;
+		if (UITrait.isDragging) return;
 		if (UITrait.cameraType != 0) return;
+		if (!object.visible) return;
 
 		var mouse = Input.getMouse();
 

@@ -1,6 +1,7 @@
 package arm;
 
 import zui.*;
+import zui.Zui.State;
 import zui.Canvas;
 import iron.data.SceneFormat;
 import iron.data.MeshData;
@@ -9,6 +10,9 @@ import iron.object.MeshObject;
 class UITrait extends armory.Trait {
 
 	public static var uienabled = true;
+	public static var isScrolling = false;
+	public static var isDragging = false;
+	public static var dragAsset:TAsset = null;
 
 	public static var showFiles = false;
 	public static var filesDone:String->Void;
@@ -20,6 +24,22 @@ class UITrait extends armory.Trait {
 	var uimodal:Zui;
 
 	public static var ww = 200; // Panel width
+
+	var meshes = ["Plane", "Sphere", "Cube", "Monkey"];
+
+	// public static function onSetTarget(target:String) {
+	// 	if (target == "shadowMap") return;
+
+	// 	var g = iron.Scene.active.camera.renderPath.currentRenderTarget;
+	// 	g.viewport(300, 0, 1280 - 300, 690);
+	// 	g.scissor(300, 0, 1280 - 300, 690);
+	// }
+
+	// public static function onFrameRendered() {
+	// 	var g = iron.Scene.active.camera.renderPath.currentRenderTarget;
+	// 	g.viewport(0, 0, 1280, 690);
+	// 	g.scissor(0, 0, 1280, 690);
+	// }
 
 	function loadBundled(names:Array<String>, done:Void->Void) {
 		var loaded = 0;
@@ -36,6 +56,8 @@ class UITrait extends armory.Trait {
 	public function new() {
 		super();
 
+		armory.system.Cycles.arm_export_tangents = false;
+
 		iron.data.Data.getFont('droid_sans.ttf', function(f:kha.Font) {
 			font = f;
 			zui.Themes.dark.FILL_WINDOW_BG = true;
@@ -44,16 +66,19 @@ class UITrait extends armory.Trait {
 			ui = new Zui( { font: font } );
 			uimodal = new Zui( { font: font } );
 			// ui = new Zui( { font: f, scaleFactor: 8, theme: zui.Themes.light } ); ////
-			loadBundled(['files'], done);
+			loadBundled(['files', 'noise64'], done);
 		});
 
 		kha.System.notifyOnDropFiles(function(filePath:String) {
-			importAsset(filePath);
+			if (StringTools.endsWith(filePath, ".obj")) importMesh(filePath);
+			else importAsset(filePath);
 		});
 	}
 
 	function importAsset(path:String) {
-		if (!StringTools.endsWith(path, ".jpg") && !StringTools.endsWith(path, ".png")) return;
+		if (!StringTools.endsWith(path, ".jpg") &&
+			!StringTools.endsWith(path, ".png") &&
+			!StringTools.endsWith(path, ".hdr")) return;
 		
 		iron.data.Data.getImage(path, function(image:kha.Image) {
 			var ar = path.split("/");
@@ -77,7 +102,13 @@ class UITrait extends armory.Trait {
 
 	function done() {
 
+		iron.Scene.active.embedded.set('noise64.png', bundled.get('noise64'));
+
 		notifyOnInit(function() {
+
+			// iron.Scene.active.camera.renderPath.onSetTarget = onSetTarget;
+			// iron.Scene.active.camera.renderPath.onFrameRendered = onFrameRendered;
+
 			currentObject = cast(iron.Scene.active.getChild("Cube"), MeshObject);
 
 			iron.App.notifyOnUpdate(update);
@@ -86,6 +117,7 @@ class UITrait extends armory.Trait {
 	}
 
 	function update() {
+		isScrolling = ui.isScrolling;
 		updateUI();
 		updateFiles();
 	}
@@ -93,6 +125,16 @@ class UITrait extends armory.Trait {
 	function updateUI() {
 		var mouse = iron.system.Input.getMouse();
 		// if (mouse.started() && mouse.x < 50 && mouse.y < 50) show = !show;
+
+		isDragging = dragAsset != null;
+		if (mouse.released() && isDragging) {
+			if (UINodes.show && mouse.x > UINodes.wx && mouse.y > UINodes.wy) {
+				var index = 0;
+				for (i in 0...assets.length) if (assets[i] == dragAsset) { index = i; break; }
+				UINodes.acceptDrag(index);
+			}
+			dragAsset = null;
+		}
 
 		if (!show) return;
 		if (!UITrait.uienabled) return;
@@ -124,7 +166,11 @@ class UITrait extends armory.Trait {
 		renderUI(g);
 		renderFiles(g);
 
-		iron.Scene.active.camera.renderPath.ready = showFiles || dirty;
+		var ready = showFiles || dirty;
+		// TODO: Texture params get overwritten
+		if (ready && UINodes.inst._matcon != null) for (t in UINodes.inst._matcon.bind_textures) t.params_set = null;
+
+		iron.Scene.active.camera.renderPath.ready = ready;
 		dirty = false;
 	}
 
@@ -151,7 +197,6 @@ class UITrait extends armory.Trait {
 		if (!UITrait.uienabled && ui.inputRegistered) ui.unregisterInput();
 		if (UITrait.uienabled && !ui.inputRegistered) ui.registerInput();
 
-		var mouse = iron.system.Input.getMouse();
 		g.color = 0xffffffff;
 
 		g.end();
@@ -168,13 +213,6 @@ class UITrait extends armory.Trait {
 				// if (ui.button("Help")) {
 					// showSplash = true;
 				// }
-
-				if (ui.button("Import Mesh")) {
-					showFiles = true;
-					filesDone = function(path:String) {
-						importMesh(path);
-					}
-				}
 
 				if (ui.button("Export Textures")) {
 
@@ -273,13 +311,37 @@ class UITrait extends armory.Trait {
 				// if (hres.changed) {
 					// iron.App.notifyOnRender(resizeTargetsHandler);
 				// }
-				// ui.text("Texture channels");
+				ui.combo(Id.handle(), ["Plane", "Mesh"], "UVs", true);
+				// ui.text("Channels");
+				ui.row([1/2, 1/2]);
+				ui.check(Id.handle({selected: true}), "Base Color");
+				ui.check(Id.handle({selected: true}), "Occlusion");
+				ui.row([1/2, 1/2]);
+				ui.check(Id.handle({selected: true}), "Roughness");
+				ui.check(Id.handle({selected: true}), "Metallic");
+				ui.check(Id.handle({selected: true}), "Normal Map");
 			}
 
 			ui.separator();
 
 			if (ui.panel(Id.handle({selected: true}), "ASSETS")) {
-				if (ui.button("Import")) {
+				if (ui.button("Import Mesh")) {
+					showFiles = true;
+					filesDone = function(path:String) {
+						importMesh(path);
+					}
+				}
+
+				var hmesh = Id.handle({position: 2});
+				var meshType = ui.combo(hmesh, meshes, "Mesh", true);
+				if (hmesh.changed) {
+					currentObject.visible = false;
+					currentObject = cast iron.Scene.active.root.getChild(meshes[hmesh.position]);
+					currentObject.visible = true;
+					UITrait.dirty = true;
+				}
+
+				if (ui.button("Import Texture")) {
 					showFiles = true;
 					filesDone = function(path:String) {
 						importAsset(path);
@@ -287,10 +349,12 @@ class UITrait extends armory.Trait {
 				}
 
 				if (assets.length > 0) {
-					var i = 0;
-					while (i < assets.length) {
+					var i = assets.length - 1;
+					while (i >= 0) {
 						var asset = assets[i];
-						ui.image(asset.image);
+						if (ui.image(asset.image) == State.Started) {
+							dragAsset = asset;
+						}
 						ui.row([1/8, 7/8]);
 						var b = ui.button("X");
 						asset.name = ui.textInput(Id.handle().nest(asset.id, {text: asset.name}), "", Right);
@@ -300,17 +364,24 @@ class UITrait extends armory.Trait {
 							assets.splice(i, 1);
 							assetNames.splice(i, 1);
 						}
-						else i++;
+						i--;
 					}
 				}
 				else {
-					ui.text("(Drag & drop assets here)");
+					ui.text("(Drag & drop assets here)", zui.Zui.Align.Center, 0xff151515);
+					ui.text("(.png .jpg .hdr .obj)", zui.Zui.Align.Center, 0xff151515);
 				}
 			}
 			ui.separator();
 		}
 		ui.end();
 		g.begin(false);
+
+		if (dragAsset != null) {
+			UITrait.dirty = true;
+			var mouse = iron.system.Input.getMouse();
+			g.drawScaledImage(dragAsset.image, mouse.x, mouse.y, 128, 128);
+		}
 	}
 
 	function renderFiles(g:kha.graphics2.Graphics) {
@@ -328,22 +399,29 @@ class UITrait extends armory.Trait {
 		var bottomRect = Std.int(iron.App.h() / 2 + modalRectH / 2);
 		topRect += modalHeaderH;
 		
-		uimodal.beginLayout(g, leftRect, topRect, modalRectW);
-		var pathHandle = Id.handle();
-		pathHandle.text = uimodal.textInput(pathHandle);
-		var path = zui.Ext.fileBrowser(uimodal, pathHandle);
-		uimodal.endLayout(false);
+		g.end();
+		var path = '/';
+		uimodal.begin(g);
+		if (uimodal.window(Id.handle(), leftRect, topRect, modalRectW, modalRectH - 100)) {
+			var pathHandle = Id.handle();
+			pathHandle.text = uimodal.textInput(pathHandle);
+			var path = zui.Ext.fileBrowser(uimodal, pathHandle);
+		}
+		uimodal.end(false);
+		g.begin(false);
 
 		uimodal.beginLayout(g, rightRect - 100, bottomRect - 30, 100);
 		if (uimodal.button("OK")) {
 			showFiles = false;
 			filesDone(path);
+			UITrait.dirty = true;
 		}
 		uimodal.endLayout(false);
 
 		uimodal.beginLayout(g, rightRect - 200, bottomRect - 30, 100);
 		if (uimodal.button("Cancel")) {
 			showFiles = false;
+			UITrait.dirty = true;
 		}
 		uimodal.endLayout();
 	}
@@ -390,6 +468,7 @@ class UITrait extends armory.Trait {
 				currentObject.data.delete();
 				// iron.App.notifyOnRender(clearTargetsHandler);
 				currentObject.setData(md);
+				UITrait.dirty = true;
 			});
 		});
 	}

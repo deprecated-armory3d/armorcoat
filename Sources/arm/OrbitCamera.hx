@@ -8,7 +8,10 @@ class OrbitCamera extends armory.Trait {
 		super();
 		
 		notifyOnUpdate(function() {
-
+			if (iron.system.Input.occupied) return;
+			if (!UITrait.uienabled) return;
+			if (UITrait.isScrolling) return;
+			if (UITrait.isDragging) return;
 			if (UITrait.cameraType != 0) return;
 
 			var mouse = armory.system.Input.getMouse();

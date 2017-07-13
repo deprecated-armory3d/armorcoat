@@ -9,6 +9,7 @@ import iron.data.MaterialData;
 
 class UINodes extends armory.Trait {
 
+	public static var inst:UINodes;
 	public static var show = true;
 
 	public static var wx:Int;
@@ -22,13 +23,14 @@ class UINodes extends armory.Trait {
 	var popupY = 0;
 
 	var sc:iron.data.ShaderData.ShaderContext = null;
-	var _matcon:TMaterialContext = null;
+	public var _matcon:TMaterialContext = null;
 	var _materialcontext:MaterialContext = null;
 
 	static var font:kha.Font;
 
 	public function new() {
 		super();
+		inst = this;
 
 		// Load font for UI labels
 		iron.data.Data.getFont('droid_sans.ttf', function(f:kha.Font) {
@@ -116,12 +118,12 @@ class UINodes extends armory.Trait {
 
 	function getNodeX():Int {
 		var mouse = iron.system.Input.getMouse();
-		return Std.int(mouse.x - wx - uinodes.panX);
+		return Std.int((mouse.x - wx - uinodes.PAN_X()) / uinodes.SCALE);
 	}
 
 	function getNodeY():Int {
 		var mouse = iron.system.Input.getMouse();
-		return Std.int(mouse.y - wy - uinodes.panY);
+		return Std.int((mouse.y - wy - uinodes.PAN_Y()) / uinodes.SCALE);
 	}
 
 	function render2D(g:kha.graphics2.Graphics) {
@@ -351,7 +353,9 @@ class UINodes extends armory.Trait {
 						{
 							name: "default_value",
 							type: "VALUE",
-							output: 0
+							output: 0,
+							min: 0.0,
+							max: 10.0
 						}
 					]
 				};
@@ -359,12 +363,79 @@ class UINodes extends armory.Trait {
 				uinodes.nodeDrag = n;
 				uinodes.nodeSelected = n;
 			}
-			if (ui.button("Image Texture")) {
+			if (ui.button("Checker Texture")) {
 				var node_id = uinodes.getNodeId(canvas.nodes);
 				var n:TNode = {
 					id: node_id,
-					name: "Image Texture",
-					type: "TEX_IMAGE",
+					name: "Checker Texture",
+					type: "TEX_CHECKER",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Vector",
+							type: "VECTOR",
+							color: 0xff6363c7,
+							default_value: [0.0, 0.0, 0.0]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color 1",
+							type: "RGB",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color 2",
+							type: "RGB",
+							color: 0xffc7c729,
+							default_value: [0.2, 0.2, 0.2]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Scale",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 5.0
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Fac",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 1.0
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Gradient Texture")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "Gradient Texture",
+					type: "TEX_GRADIENT",
 					x: getNodeX(),
 					y: getNodeY(),
 					color: 0xff4982a0,
@@ -385,12 +456,12 @@ class UINodes extends armory.Trait {
 							name: "Color",
 							type: "RGBA",
 							color: 0xffc7c729,
-							default_value: ""
+							default_value: [0.8, 0.8, 0.8]
 						},
 						{
 							id: uinodes.getSocketId(canvas.nodes),
 							node_id: node_id,
-							name: "Alpha",
+							name: "Fac",
 							type: "VALUE",
 							color: 0xffa1a1a1,
 							default_value: 1.0
@@ -398,8 +469,10 @@ class UINodes extends armory.Trait {
 					],
 					buttons: [
 						{
-							name: "default_value",
+							name: "gradient_type",
 							type: "ENUM",
+							// data: ["Linear", "Quadratic", "Easing", "Diagonal", "Radial", "Quadratic Sphere", "Spherical"],
+							data: ["Linear", "Diagonal", "Radial", "Spherical"],
 							default_value: 0,
 							output: 0
 						}
@@ -408,6 +481,465 @@ class UINodes extends armory.Trait {
 				canvas.nodes.push(n);
 				uinodes.nodeDrag = n;
 				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Noise Texture")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "Noise Texture",
+					type: "TEX_NOISE",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Vector",
+							type: "VECTOR",
+							color: 0xff6363c7,
+							default_value: [0.0, 0.0, 0.0]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Scale",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 5.0
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Fac",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 1.0
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Voronoi Texture")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "Voronoi Texture",
+					type: "TEX_VORONOI",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Vector",
+							type: "VECTOR",
+							color: 0xff6363c7,
+							default_value: [0.0, 0.0, 0.0]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Scale",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 5.0
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Fac",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 1.0
+						}
+					],
+					buttons: [
+						{
+							name: "coloring",
+							type: "ENUM",
+							data: ["Intensity", "Cells"],
+							default_value: 0,
+							output: 0
+						}
+					]
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("BrightContrast")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "BrightContrast",
+					type: "BRIGHTCONTRAST",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Bright",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Contrast",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Gamma")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "Gamma",
+					type: "GAMMA",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Gamma",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 1.0
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("HueSatVal")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "HueSatVal",
+					type: "HUE_SAT",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Hue",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.5
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Sat",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 1.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Val",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 1.0
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Invert")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "Invert",
+					type: "INVERT",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Fac",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.5
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Combine RGB")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "Combine RGB",
+					type: "COMBRGB",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "R",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "G",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "B",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("MixRGB")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "MixRGB",
+					type: "MIX_RGB",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Fac",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.5
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color1",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.5, 0.5, 0.5]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color2",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.5, 0.5, 0.5]
+						}
+					],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "Color",
+							type: "RGBA",
+							color: 0xffc7c729,
+							default_value: [0.8, 0.8, 0.8]
+						}
+					],
+					buttons: [
+						{
+							name: "blend_type",
+							type: "ENUM",
+							data: ["Mix", "Add", "Multiply", "Subtract", "Screen", "Divide", "Difference", "Darken", "Lighten", "Soft Light"],
+							default_value: 0,
+							output: 0
+						},
+						{
+							name: "use_clamp",
+							type: "BOOL",
+							default_value: "false",
+							output: 0
+						}
+					]
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Camera Data")) {
+				var node_id = uinodes.getNodeId(canvas.nodes);
+				var n:TNode = {
+					id: node_id,
+					name: "Camera Data",
+					type: "CAMERA",
+					x: getNodeX(),
+					y: getNodeY(),
+					color: 0xff4982a0,
+					inputs: [],
+					outputs: [
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "View Vector",
+							type: "VECTOR",
+							color: 0xff6363c7,
+							default_value: [0.0, 0.0, 0.0]
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "View Z Depth",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						},
+						{
+							id: uinodes.getSocketId(canvas.nodes),
+							node_id: node_id,
+							name: "View Distance",
+							type: "VALUE",
+							color: 0xffa1a1a1,
+							default_value: 0.0
+						}
+					],
+					buttons: []
+				};
+				canvas.nodes.push(n);
+				uinodes.nodeDrag = n;
+				uinodes.nodeSelected = n;
+			}
+			if (ui.button("Image Texture")) {
+				createImageTexture();
 			}
 
 			ui.endLayout();
@@ -434,7 +966,8 @@ class UINodes extends armory.Trait {
 			name: context_id,
 			depth_write: true,
 			compare_mode: 'less',
-			cull_mode: 'clockwise' });
+			// cull_mode: 'clockwise' });
+			cull_mode: 'none' });
 
 		var vert = con_mesh.make_vert();
 		var frag = con_mesh.make_frag();
@@ -447,11 +980,21 @@ class UINodes extends armory.Trait {
 		
 		con_mesh.add_elem('tex', 2);
 		vert.add_out('vec2 texCoord');
-        vert.write('texCoord = tex;');
+		vert.write('texCoord = tex;');
 
-        vert.add_out('vec3 wnormal');
-        vert.write('wnormal = normalize(N * nor);');
-        frag.write_main_header('vec3 n = normalize(wnormal);');
+		vert.add_out('vec3 wnormal');
+		vert.write('wnormal = normalize(N * nor);');
+		frag.write_main_header('vec3 n = normalize(wnormal);');
+
+		vert.add_out('vec3 wposition');
+		vert.add_uniform('mat4 W', '_worldMatrix');
+        vert.write_pre = true;
+        vert.write('wposition = vec4(W * vec4(pos, 1.0)).xyz;');
+        vert.write_pre = false;
+		vert.add_out('vec3 eyeDir');
+		vert.add_uniform('vec3 eye', '_cameraPosition');
+		vert.write('eyeDir = eye - wposition;');
+		frag.prepend('vec3 vVec = normalize(eyeDir);');
 
 		var sout = Cycles.parse(canvas, con_mesh, vert, frag, null, null, null, matcon);
 		var base = sout.out_basecol;
@@ -467,7 +1010,7 @@ class UINodes extends armory.Trait {
 		frag.write_header('float packFloat(const float f1, const float f2) {float index = floor(f1 * 100.0); float alpha = clamp(f2, 0.0, 1.0 - 0.001);return index + alpha;}');
 
 		frag.write('n /= (abs(n.x) + abs(n.y) + abs(n.z));');
-    	frag.write('n.xy = n.z >= 0.0 ? n.xy : octahedronWrap(n.xy);');
+		frag.write('n.xy = n.z >= 0.0 ? n.xy : octahedronWrap(n.xy);');
 
 		frag.add_out('vec4[2] fragColor');
 		frag.write('fragColor[0] = vec4(n.xy, packFloat(metallic, roughness), 1.0 - gl_FragCoord.z);');
@@ -584,5 +1127,61 @@ class UINodes extends armory.Trait {
 					// });
 			});
 		}
+	}
+
+	public function createImageTexture() {
+		var node_id = uinodes.getNodeId(canvas.nodes);
+		var n:TNode = {
+			id: node_id,
+			name: "Image Texture",
+			type: "TEX_IMAGE",
+			x: getNodeX(),
+			y: getNodeY(),
+			color: 0xff4982a0,
+			inputs: [
+				{
+					id: uinodes.getSocketId(canvas.nodes),
+					node_id: node_id,
+					name: "Vector",
+					type: "VECTOR",
+					color: 0xff6363c7,
+					default_value: [0.0, 0.0, 0.0]
+				}
+			],
+			outputs: [
+				{
+					id: uinodes.getSocketId(canvas.nodes),
+					node_id: node_id,
+					name: "Color",
+					type: "RGBA",
+					color: 0xffc7c729,
+					default_value: ""
+				},
+				{
+					id: uinodes.getSocketId(canvas.nodes),
+					node_id: node_id,
+					name: "Alpha",
+					type: "VALUE",
+					color: 0xffa1a1a1,
+					default_value: 1.0
+				}
+			],
+			buttons: [
+				{
+					name: "default_value",
+					type: "ENUM",
+					default_value: 0,
+					output: 0
+				}
+			]
+		};
+		canvas.nodes.push(n);
+		uinodes.nodeDrag = n;
+		uinodes.nodeSelected = n;
+	}
+
+	public static function acceptDrag(assetIndex:Int) {
+		inst.createImageTexture();
+		uinodes.nodeSelected.buttons[0].default_value = assetIndex;
 	}
 }
