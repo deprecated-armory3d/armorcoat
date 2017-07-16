@@ -430,7 +430,7 @@ class UITrait extends armory.Trait {
 
 		iron.data.Data.getBlob(path, function(b:kha.Blob) {
 
-			var obj = new ObjLoader(b.toString());
+			var obj = new iron.format.obj.Loader(b.toString());
 			var pa = new TFloat32Array(obj.indexedVertices.length);
 			for (i in 0...pa.length) pa[i] = obj.indexedVertices[i];
 			var uva = new TFloat32Array(obj.indexedUVs.length);

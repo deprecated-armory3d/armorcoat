@@ -1,0 +1,3 @@
+[submodule "Libraries/iron_format"]
+	path = Libraries/iron_format
+	url = https://github.com/armory3d/iron_format
