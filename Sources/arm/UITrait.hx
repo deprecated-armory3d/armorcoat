@@ -161,16 +161,27 @@ class UITrait extends armory.Trait {
 		}
 	}
 
+	var redraws = 0;
+	var lastW = 0;
+	var lastH = 0;
 	function render(g:kha.graphics2.Graphics) {
 		uienabled = !showFiles;
 		renderUI(g);
 		renderFiles(g);
 
-		var ready = showFiles || dirty;
-		// TODO: Texture params get overwritten
-		if (ready && UINodes.inst._matcon != null) for (t in UINodes.inst._matcon.bind_textures) t.params_set = null;
+		if (lastW > 0 && (lastW != iron.App.w() || lastH != iron.App.h())) {
+			redraws = 2;
+		}
+		lastW = iron.App.w();
+		lastH = iron.App.h();
 
-		iron.Scene.active.camera.renderPath.ready = ready;
+		if(showFiles || dirty) redraws = 2;
+
+		// TODO: Texture params get overwritten
+		if (redraws > 0 && UINodes.inst._matcon != null) for (t in UINodes.inst._matcon.bind_textures) t.params_set = null;
+
+		iron.Scene.active.camera.renderPath.ready = redraws > 0;
+		redraws--;
 		dirty = false;
 	}
 
