@@ -24,7 +24,7 @@ class UINodes extends armory.Trait {
 
 	var sc:iron.data.ShaderData.ShaderContext = null;
 	public var _matcon:TMaterialContext = null;
-	var _materialcontext:MaterialContext = null;
+	public var _materialcontext:MaterialContext = null;
 
 	static var font:kha.Font;
 
@@ -228,19 +228,7 @@ class UINodes extends armory.Trait {
 		}
 	}
 
-	function make_mesh(data:ShaderData, matcon:TMaterialContext):armory.system.ShaderContext {
-		var context_id = 'mesh';
-		var con_mesh:armory.system.ShaderContext = data.add_context({
-			name: context_id,
-			depth_write: true,
-			compare_mode: 'less',
-			// cull_mode: 'clockwise' });
-			cull_mode: 'none' });
-
-		var vert = con_mesh.make_vert();
-		var frag = con_mesh.make_frag();
-
-		
+	function make_base(matcon:TMaterialContext, con_mesh:armory.system.ShaderContext, vert:armory.system.Shader, frag:armory.system.Shader) {
 		frag.ins = vert.outs;
 		vert.add_uniform('mat3 N', '_normalMatrix');
 		vert.add_uniform('mat4 WVP', '_worldViewProjectionMatrix');
@@ -273,6 +261,22 @@ class UINodes extends armory.Trait {
 		frag.write('float roughness = $rough;');
 		frag.write('float metallic = $met;');
 		frag.write('float occlusion = $occ;');
+	}
+
+	function make_mesh(data:ShaderData, matcon:TMaterialContext):armory.system.ShaderContext {
+
+		var context_id = 'mesh';
+		var con_mesh:armory.system.ShaderContext = data.add_context({
+			name: context_id,
+			depth_write: true,
+			compare_mode: 'less',
+			// cull_mode: 'clockwise' });
+			cull_mode: 'none' });
+
+		var vert = con_mesh.make_vert();
+		var frag = con_mesh.make_frag();
+
+		make_base(matcon, con_mesh, vert, frag);
 
 		frag.write_header('vec2 octahedronWrap(const vec2 v) {return (1.0 - abs(v.yx)) * (vec2(v.x >= 0.0 ? 1.0 : -1.0, v.y >= 0.0 ? 1.0 : -1.0));}');
 		frag.write_header('float packFloat(const float f1, const float f2) {float index = floor(f1 * 100.0); float alpha = clamp(f2, 0.0, 1.0 - 0.001);return index + alpha;}');
@@ -289,6 +293,53 @@ class UINodes extends armory.Trait {
 		con_mesh.data.fragment_shader = frag.get();
 
 		return con_mesh;
+	}
+
+	public function make_export():iron.data.ShaderData.ShaderContext {
+		
+		if (!getMOut()) return null;
+
+		var mat:TMaterial = {
+			name: "Material",
+			canvas: canvas
+		};
+		var data = new ShaderData(mat);
+
+		var matcon:TMaterialContext = {
+			name: "mesh",
+			bind_textures: []
+		}
+
+		var con_mesh:armory.system.ShaderContext = data.add_context({
+			name: 'mesh',
+			depth_write: false,
+			compare_mode: 'always',
+			cull_mode: 'none' });
+
+		var vert = con_mesh.make_vert();
+		var frag = con_mesh.make_frag();
+
+		make_base(matcon, con_mesh, vert, frag);
+
+		vert.write('vec2 tpos = vec2(tex.x * 2.0 - 1.0, tex.y * 2.0 - 1.0);');
+		vert.write('gl_Position = vec4(tpos, 0.0, 1.0);');
+
+		frag.add_out('vec4[3] fragColor');
+		frag.write('fragColor[0] = vec4(pow(basecol.rgb, vec3(1.0 / 2.2)), occlusion);');
+		frag.write('fragColor[1] = vec4(roughness, metallic, 0.0, 1.0);');
+		if (frag.contains("vec3 texn")) {
+			frag.write('fragColor[2] = vec4(texn.rgb, 1.0);');
+		}
+		else {
+			frag.write('fragColor[2] = vec4(0.5, 0.5, 1.0, 1.0);');
+		}
+
+		con_mesh.data.shader_from_source = true;
+		con_mesh.data.vertex_shader = vert.get();
+		con_mesh.data.fragment_shader = frag.get();
+
+		var sc = new iron.data.ShaderData.ShaderContext(con_mesh.data, null, function(sc:iron.data.ShaderData.ShaderContext){});
+		return sc;
 	}
 
 	// function make_depth(data:ShaderData):armory.system.ShaderContext {
@@ -318,14 +369,15 @@ class UINodes extends armory.Trait {
 	// 	return con_depth;
 	// }
 
+	function getMOut():Bool {
+		for (n in canvas.nodes) if (n.type == "OUTPUT_MATERIAL_PBR") return true;
+		return false;
+	}
 
 	function parseMaterial() {
 		UITrait.dirty = true;
 
-		var mout = false;
-		for (n in canvas.nodes) if (n.type == "OUTPUT_MATERIAL_PBR") { mout = true; break; }
-
-		if (mout) {
+		if (getMOut()) {
 
 			iron.data.Data.getMaterial("Scene", "Material", function(m:iron.data.MaterialData) {
 

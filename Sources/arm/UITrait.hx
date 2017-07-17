@@ -112,7 +112,7 @@ class UITrait extends armory.Trait {
 			currentObject = cast(iron.Scene.active.getChild("Cube"), MeshObject);
 
 			iron.App.notifyOnUpdate(update);
-			iron.App.notifyOnRender2D(render);
+			iron.App.notifyOnRender2D(render2D);
 		});
 	}
 
@@ -164,7 +164,7 @@ class UITrait extends armory.Trait {
 	var redraws = 0;
 	var lastW = 0;
 	var lastH = 0;
-	function render(g:kha.graphics2.Graphics) {
+	function render2D(g:kha.graphics2.Graphics) {
 		uienabled = !showFiles;
 		renderUI(g);
 		renderFiles(g);
@@ -227,94 +227,115 @@ class UITrait extends armory.Trait {
 
 				if (ui.button("Export Textures")) {
 
-					var textureSize = getTextureRes();
-
 					showFiles = true;
 					filesDone = function(path:String) {
-						// var bo = new haxe.io.BytesOutput();
-						// var pixels = texpaint.getPixels();
-						// var rgb = haxe.io.Bytes.alloc(textureSize * textureSize * 3);
+
+						ui.g.end();
+
+						var textureSize = getTextureRes();
+						var imgBaseOcc = kha.Image.createRenderTarget(textureSize, textureSize);
+						var imgRoughMet = kha.Image.createRenderTarget(textureSize, textureSize);
+						var imgNormal = kha.Image.createRenderTarget(textureSize, textureSize);
+
+						var context = UINodes.inst.make_export();
+						var g4 = imgBaseOcc.g4;
+						g4.begin([imgRoughMet, imgNormal]);
+						
+						g4.setPipeline(context.pipeState);
+						iron.object.Uniforms.setConstants(g4, context, currentObject, iron.Scene.active.camera, iron.Scene.active.lamps[0], null);
+						iron.object.Uniforms.setMaterialConstants(g4, context, UINodes.inst._materialcontext);
+						g4.setVertexBuffer(currentObject.data.geom.vertexBuffer);
+						g4.setIndexBuffer(currentObject.data.geom.indexBuffers[0]);
+						g4.drawIndexedVertices();
+						g4.end();
+
+						// Base
+						var bo = new haxe.io.BytesOutput();
+						var pixels = imgBaseOcc.getPixels();
+						var rgb = haxe.io.Bytes.alloc(textureSize * textureSize * 3);
 						// // BGRA to RGB
-						// for (i in 0...textureSize * textureSize) {
-						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
-						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
-						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 0));
-						// }
-						// var pngwriter = new arm.format.png.Writer(bo);
-		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
-						// // var jpgdata:arm.format.jpg.Data.Data = {
-						// // 	width: textureSize,
-						// // 	height: textureSize,
-						// // 	quality: 80,
-						// // 	pixels: rgb
-						// // };
-						// // var jpgwriter = new arm.format.jpg.Writer(bo);
-						// // jpgwriter.write(jpgdata);
-						// #if kha_krom
-						// Krom.fileSaveBytes(path + "/tex_basecol.png", bo.getBytes().getData());
-						// #end
+						for (i in 0...textureSize * textureSize) {
+							rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
+							rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
+							rgb.set(i * 3 + 2, pixels.get(i * 4 + 0));
+						}
+						var pngwriter = new iron.format.png.Writer(bo);
+						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+						// var jpgdata:iron.format.jpg.Data.Data = {
+						// 	width: textureSize,
+						// 	height: textureSize,
+						// 	quality: 80,
+						// 	pixels: rgb
+						// };
+						// var jpgwriter = new iron.format.jpg.Writer(bo);
+						// jpgwriter.write(jpgdata);
+						#if kha_krom
+						Krom.fileSaveBytes(path + "/tex_basecol.png", bo.getBytes().getData());
+						#end
 
-						// pixels = texpaint_nor.getPixels();
-						// for (i in 0...textureSize * textureSize) {
-						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
-						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
-						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 0));
-						// }
-						// bo = new haxe.io.BytesOutput();
-						// var pngwriter = new arm.format.png.Writer(bo);
-		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
-		 //    			#if kha_krom
-		 //    			Krom.fileSaveBytes(path + "/tex_nor.png", bo.getBytes().getData());
-		 //    			#end
+						// Occ
+						bo = new haxe.io.BytesOutput();
+						rgb = haxe.io.Bytes.alloc(textureSize * textureSize * 3);
+						for (i in 0...textureSize * textureSize) {
+							rgb.set(i * 3 + 0, pixels.get(i * 4 + 3));
+							rgb.set(i * 3 + 1, pixels.get(i * 4 + 3));
+							rgb.set(i * 3 + 2, pixels.get(i * 4 + 3));
+						}
+						pngwriter = new iron.format.png.Writer(bo);
+						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+						#if kha_krom
+						Krom.fileSaveBytes(path + "/tex_occ.png", bo.getBytes().getData());
+						#end
 
-		 //    			for (i in 0...textureSize * textureSize) {
-						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 3));
-						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 3));
-						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 3));
-						// }
-						// bo = new haxe.io.BytesOutput();
-						// var pngwriter = new arm.format.png.Writer(bo);
-		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
-		 //    			#if kha_krom
-		 //    			Krom.fileSaveBytes(path + "/tex_height.png", bo.getBytes().getData());
-		 //    			#end
+						// Rough
+						bo = new haxe.io.BytesOutput();
+						pixels = imgRoughMet.getPixels();
+						rgb = haxe.io.Bytes.alloc(textureSize * textureSize * 3);
+						for (i in 0...textureSize * textureSize) {
+							rgb.set(i * 3 + 0, pixels.get(i * 4 + 0));
+							rgb.set(i * 3 + 1, pixels.get(i * 4 + 0));
+							rgb.set(i * 3 + 2, pixels.get(i * 4 + 0));
+						}
+						pngwriter = new iron.format.png.Writer(bo);
+						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+						#if kha_krom
+						Krom.fileSaveBytes(path + "/tex_rough.png", bo.getBytes().getData());
+						#end
 
-		 //    			pixels = texpaint_pack.getPixels(); // occ, rough, met
-		 //    			for (i in 0...textureSize * textureSize) {
-						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
-						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 2));
-						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 2));
-						// }
-						// bo = new haxe.io.BytesOutput();
-						// var pngwriter = new arm.format.png.Writer(bo);
-		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
-		 //    			#if kha_krom
-		 //    			Krom.fileSaveBytes(path + "/tex_occ.png", bo.getBytes().getData());
-		 //    			#end
+						// Met
+						bo = new haxe.io.BytesOutput();
+						rgb = haxe.io.Bytes.alloc(textureSize * textureSize * 3);
+						for (i in 0...textureSize * textureSize) {
+							rgb.set(i * 3 + 0, pixels.get(i * 4 + 1));
+							rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
+							rgb.set(i * 3 + 2, pixels.get(i * 4 + 1));
+						}
+						pngwriter = new iron.format.png.Writer(bo);
+						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+						#if kha_krom
+						Krom.fileSaveBytes(path + "/tex_met.png", bo.getBytes().getData());
+						#end
 
-		 //    			for (i in 0...textureSize * textureSize) {
-						// 	rgb.set(i * 3 + 0, pixels.get(i * 4 + 1));
-						// 	rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
-						// 	rgb.set(i * 3 + 2, pixels.get(i * 4 + 1));
-						// }
-						// bo = new haxe.io.BytesOutput();
-						// var pngwriter = new arm.format.png.Writer(bo);
-		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
-		 //    			#if kha_krom
-		 //    			Krom.fileSaveBytes(path + "/tex_rough.png", bo.getBytes().getData());
-		 //    			#end
+						// Nor
+						bo = new haxe.io.BytesOutput();
+						pixels = imgNormal.getPixels();
+						rgb = haxe.io.Bytes.alloc(textureSize * textureSize * 3);
+						for (i in 0...textureSize * textureSize) {
+							rgb.set(i * 3 + 0, pixels.get(i * 4 + 2));
+							rgb.set(i * 3 + 1, pixels.get(i * 4 + 1));
+							rgb.set(i * 3 + 2, pixels.get(i * 4 + 0));
+						}
+						pngwriter = new iron.format.png.Writer(bo);
+						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
+						#if kha_krom
+						Krom.fileSaveBytes(path + "/tex_nor.png", bo.getBytes().getData());
+						#end
 
-		 //    			for (i in 0...textureSize * textureSize) {
-						// 	rgb.set(i * 3 + 0, pixels.get(i * 4));
-						// 	rgb.set(i * 3 + 1, pixels.get(i * 4));
-						// 	rgb.set(i * 3 + 2, pixels.get(i * 4));
-						// }
-						// bo = new haxe.io.BytesOutput();
-						// var pngwriter = new arm.format.png.Writer(bo);
-		 //    			pngwriter.write(arm.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
-		 //    			#if kha_krom
-		 //    			Krom.fileSaveBytes(path + "/tex_met.png", bo.getBytes().getData());
-		 //    			#end
+						imgBaseOcc.unload();
+						imgRoughMet.unload();
+						imgNormal.unload();
+
+						ui.g.begin(false);
 					}
 				}
 				var hres = Id.handle({position: textureRes});
@@ -322,6 +343,8 @@ class UITrait extends armory.Trait {
 				// if (hres.changed) {
 					// iron.App.notifyOnRender(resizeTargetsHandler);
 				// }
+				ui.combo(Id.handle(), ["8bit"], "Color", true);
+				ui.combo(Id.handle(), ["png"], "Format", true);
 				ui.combo(Id.handle(), ["Plane", "Mesh"], "UVs", true);
 				// ui.text("Channels");
 				ui.row([1/2, 1/2]);
@@ -395,6 +418,7 @@ class UITrait extends armory.Trait {
 		}
 	}
 
+	var path = '/';
 	function renderFiles(g:kha.graphics2.Graphics) {
 		if (!showFiles) return;
 
@@ -411,12 +435,11 @@ class UITrait extends armory.Trait {
 		topRect += modalHeaderH;
 		
 		g.end();
-		var path = '/';
 		uimodal.begin(g);
 		if (uimodal.window(Id.handle(), leftRect, topRect, modalRectW, modalRectH - 100)) {
 			var pathHandle = Id.handle();
 			pathHandle.text = uimodal.textInput(pathHandle);
-			var path = zui.Ext.fileBrowser(uimodal, pathHandle);
+			path = zui.Ext.fileBrowser(uimodal, pathHandle);
 		}
 		uimodal.end(false);
 		g.begin(false);
@@ -477,7 +500,6 @@ class UITrait extends armory.Trait {
 
 			new MeshData(raw, function(md:MeshData) {
 				currentObject.data.delete();
-				// iron.App.notifyOnRender(clearTargetsHandler);
 				currentObject.setData(md);
 				UITrait.dirty = true;
 			});
