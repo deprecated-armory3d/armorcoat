@@ -128,7 +128,7 @@ class UITrait extends armory.Trait {
 
 		isDragging = dragAsset != null;
 		if (mouse.released() && isDragging) {
-			if (UINodes.show && mouse.x > UINodes.wx && mouse.y > UINodes.wy) {
+			if (UINodes.show && mouse.x > UINodes.wx && mouse.x < UINodes.wx + UINodes.ww && mouse.y > UINodes.wy) {
 				var index = 0;
 				for (i in 0...assets.length) if (assets[i] == dragAsset) { index = i; break; }
 				UINodes.acceptDrag(index);
@@ -151,10 +151,10 @@ class UITrait extends armory.Trait {
 		var mouse = iron.system.Input.getMouse();
 
 		if (mouse.released()) {
-			var left = iron.App.w() / 2 - modalRectW / 2;
-			var right = iron.App.w() / 2 + modalRectW / 2;
-			var top = iron.App.h() / 2 - modalRectH / 2;
-			var bottom = iron.App.h() / 2 + modalRectH / 2;
+			var left = arm.App.realw() / 2 - modalRectW / 2;
+			var right = arm.App.realw() / 2 + modalRectW / 2;
+			var top = arm.App.realh() / 2 - modalRectH / 2;
+			var bottom = arm.App.realh() / 2 + modalRectH / 2;
 			if (mouse.x < left || mouse.x > right || mouse.y < top + modalHeaderH || mouse.y > bottom) {
 				showFiles = false;
 			}
@@ -169,11 +169,11 @@ class UITrait extends armory.Trait {
 		renderUI(g);
 		renderFiles(g);
 
-		if (lastW > 0 && (lastW != iron.App.w() || lastH != iron.App.h())) {
-			redraws = 2;
+		if (lastW > 0 && (lastW != arm.App.realw() || lastH != arm.App.realh())) {
+			resize();
 		}
-		lastW = iron.App.w();
-		lastH = iron.App.h();
+		lastW = arm.App.realw();
+		lastH = arm.App.realh();
 
 		if(showFiles || dirty) redraws = 2;
 
@@ -201,6 +201,20 @@ class UITrait extends armory.Trait {
 		return 0;
 	}
 
+	function resize() {
+		UINodes.calcLayout();
+		UINodes.grid.unload();
+		UINodes.grid = null;
+		UITrait.dirty = true;
+		iron.Scene.active.camera.buildProjection();
+	}
+
+	var isBase = true;
+	var isOcc = true;
+	var isRough = true;
+	var isMet = true;
+	var isNor = true;
+	var uvtype = 0;
 	var hwnd = Id.handle();
 	function renderUI(g:kha.graphics2.Graphics) {
 		if (!show) return;
@@ -214,7 +228,7 @@ class UITrait extends armory.Trait {
 		ui.begin(g);
 		// ui.begin(rt.g2); ////
 		
-		if (ui.window(hwnd, 0, 0, ww, iron.App.h())) {
+		if (ui.window(hwnd, arm.App.realw() - ww, 0, ww, arm.App.realh())) {
 
 			if (ui.panel(Id.handle({selected: true}), "PROJECT")) {
 				// ui.row([1/2, 1/2]);
@@ -241,13 +255,16 @@ class UITrait extends armory.Trait {
 						var g4 = imgBaseOcc.g4;
 						g4.begin([imgRoughMet, imgNormal]);
 						
+						var object:MeshObject = uvtype == 0 ? cast iron.Scene.active.root.getChild("Plane") : currentObject;
+
 						g4.setPipeline(context.pipeState);
-						iron.object.Uniforms.setConstants(g4, context, currentObject, iron.Scene.active.camera, iron.Scene.active.lamps[0], null);
+						iron.object.Uniforms.setConstants(g4, context, object, iron.Scene.active.camera, iron.Scene.active.lamps[0], null);
 						iron.object.Uniforms.setMaterialConstants(g4, context, UINodes.inst._materialcontext);
-						g4.setVertexBuffer(currentObject.data.geom.vertexBuffer);
-						g4.setIndexBuffer(currentObject.data.geom.indexBuffers[0]);
+						g4.setVertexBuffer(object.data.geom.vertexBuffer);
+						g4.setIndexBuffer(object.data.geom.indexBuffers[0]);
 						g4.drawIndexedVertices();
 						g4.end();
+						ui.g.begin(false);
 
 						// Base
 						var bo = new haxe.io.BytesOutput();
@@ -270,7 +287,7 @@ class UITrait extends armory.Trait {
 						// var jpgwriter = new iron.format.jpg.Writer(bo);
 						// jpgwriter.write(jpgdata);
 						#if kha_krom
-						Krom.fileSaveBytes(path + "/tex_basecol.png", bo.getBytes().getData());
+						if (isBase) Krom.fileSaveBytes(path + "/tex_basecol.png", bo.getBytes().getData());
 						#end
 
 						// Occ
@@ -284,7 +301,7 @@ class UITrait extends armory.Trait {
 						pngwriter = new iron.format.png.Writer(bo);
 						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
 						#if kha_krom
-						Krom.fileSaveBytes(path + "/tex_occ.png", bo.getBytes().getData());
+						if (isOcc) Krom.fileSaveBytes(path + "/tex_occ.png", bo.getBytes().getData());
 						#end
 
 						// Rough
@@ -299,7 +316,7 @@ class UITrait extends armory.Trait {
 						pngwriter = new iron.format.png.Writer(bo);
 						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
 						#if kha_krom
-						Krom.fileSaveBytes(path + "/tex_rough.png", bo.getBytes().getData());
+						if (isRough) Krom.fileSaveBytes(path + "/tex_rough.png", bo.getBytes().getData());
 						#end
 
 						// Met
@@ -313,7 +330,7 @@ class UITrait extends armory.Trait {
 						pngwriter = new iron.format.png.Writer(bo);
 						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
 						#if kha_krom
-						Krom.fileSaveBytes(path + "/tex_met.png", bo.getBytes().getData());
+						if (isMet) Krom.fileSaveBytes(path + "/tex_met.png", bo.getBytes().getData());
 						#end
 
 						// Nor
@@ -328,14 +345,12 @@ class UITrait extends armory.Trait {
 						pngwriter = new iron.format.png.Writer(bo);
 						pngwriter.write(iron.format.png.Tools.buildRGB(textureSize, textureSize, rgb));
 						#if kha_krom
-						Krom.fileSaveBytes(path + "/tex_nor.png", bo.getBytes().getData());
+						if (isNor) Krom.fileSaveBytes(path + "/tex_nor.png", bo.getBytes().getData());
 						#end
 
 						imgBaseOcc.unload();
 						imgRoughMet.unload();
 						imgNormal.unload();
-
-						ui.g.begin(false);
 					}
 				}
 				var hres = Id.handle({position: textureRes});
@@ -345,26 +360,24 @@ class UITrait extends armory.Trait {
 				// }
 				ui.combo(Id.handle(), ["8bit"], "Color", true);
 				ui.combo(Id.handle(), ["png"], "Format", true);
-				ui.combo(Id.handle(), ["Plane", "Mesh"], "UVs", true);
+				uvtype = ui.combo(Id.handle({position: uvtype}), ["Plane", "Mesh"], "UVs", true);
 				// ui.text("Channels");
 				ui.row([1/2, 1/2]);
-				ui.check(Id.handle({selected: true}), "Base Color");
-				ui.check(Id.handle({selected: true}), "Occlusion");
+				isBase = ui.check(Id.handle({selected: isBase}), "Base Color");
+				isOcc = ui.check(Id.handle({selected: isOcc}), "Occlusion");
 				ui.row([1/2, 1/2]);
-				ui.check(Id.handle({selected: true}), "Roughness");
-				ui.check(Id.handle({selected: true}), "Metallic");
-				ui.check(Id.handle({selected: true}), "Normal Map");
+				isRough = ui.check(Id.handle({selected: isRough}), "Roughness");
+				isMet = ui.check(Id.handle({selected: isMet}), "Metallic");
+				isNor = ui.check(Id.handle({selected: isNor}), "Normal Map");
+
+				var hlayout = Id.handle({position: arm.App.layout});
+				arm.App.layout = ui.combo(hlayout, ["Horizontal", "Vertical"], "Layout", true);
+				if (hlayout.changed) resize();
 			}
 
 			ui.separator();
 
 			if (ui.panel(Id.handle({selected: true}), "ASSETS")) {
-				if (ui.button("Import Mesh")) {
-					showFiles = true;
-					filesDone = function(path:String) {
-						importMesh(path);
-					}
-				}
 
 				var hmesh = Id.handle({position: 2});
 				var meshType = ui.combo(hmesh, meshes, "Mesh", true);
@@ -373,6 +386,13 @@ class UITrait extends armory.Trait {
 					currentObject = cast iron.Scene.active.root.getChild(meshes[hmesh.position]);
 					currentObject.visible = true;
 					UITrait.dirty = true;
+				}
+
+				if (ui.button("Import Mesh")) {
+					showFiles = true;
+					filesDone = function(path:String) {
+						importMesh(path);
+					}
 				}
 
 				if (ui.button("Import Texture")) {
@@ -422,16 +442,16 @@ class UITrait extends armory.Trait {
 	function renderFiles(g:kha.graphics2.Graphics) {
 		if (!showFiles) return;
 
-		var left = iron.App.w() / 2 - modalW / 2;
-		var top = iron.App.h() / 2 - modalH / 2;
+		var left = arm.App.realw() / 2 - modalW / 2;
+		var top = arm.App.realh() / 2 - modalH / 2;
 		var filesImg = bundled.get('files');
 		g.color = 0xffffffff;
 		g.drawScaledImage(filesImg, left, top, modalW, modalH);
 
-		var leftRect = Std.int(iron.App.w() / 2 - modalRectW / 2);
-		var rightRect = Std.int(iron.App.w() / 2 + modalRectW / 2);
-		var topRect = Std.int(iron.App.h() / 2 - modalRectH / 2);
-		var bottomRect = Std.int(iron.App.h() / 2 + modalRectH / 2);
+		var leftRect = Std.int(arm.App.realw() / 2 - modalRectW / 2);
+		var rightRect = Std.int(arm.App.realw() / 2 + modalRectW / 2);
+		var topRect = Std.int(arm.App.realh() / 2 - modalRectH / 2);
+		var bottomRect = Std.int(arm.App.realh() / 2 + modalRectH / 2);
 		topRect += modalHeaderH;
 		
 		g.end();

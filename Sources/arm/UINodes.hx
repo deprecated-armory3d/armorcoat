@@ -12,8 +12,10 @@ class UINodes extends armory.Trait {
 	public static var inst:UINodes;
 	public static var show = true;
 
-	public static var wx:Int;
-	public static var wy:Int;
+	public static var ww = 0;
+	public static var wh = 0;
+	public static var wx = 0;
+	public static var wy = 0;
 
 	var ui:Zui;
 	var drawMenu = false;
@@ -28,9 +30,31 @@ class UINodes extends armory.Trait {
 
 	static var font:kha.Font;
 
+	static var lastLayout = -1;
+	public static function calcLayout() {		
+		
+		if (arm.App.layout == 0) {
+			UINodes.wx = 0;
+			UINodes.wh = 300;
+			UINodes.wy = arm.App.realh() - UINodes.wh;
+			UINodes.ww = arm.App.realw() - UITrait.ww;
+			if (lastLayout != arm.App.layout) { nodes.panX += 300; nodes.panY -= 200; }
+		}
+		else {
+			UINodes.wx = Std.int((arm.App.realw() - UITrait.ww) / 2);
+			UINodes.wh = arm.App.realh();
+			UINodes.wy = 0;
+			UINodes.ww = Std.int((arm.App.realw() - UITrait.ww) / 2);
+			if (lastLayout != arm.App.layout) { nodes.panX -= 300; nodes.panY += 200; }
+		}
+
+		lastLayout = arm.App.layout;
+	}
+
 	public function new() {
 		super();
 		inst = this;
+		calcLayout();
 
 		// Load font for UI labels
 		iron.data.Data.getFont('droid_sans.ttf', function(f:kha.Font) {
@@ -63,7 +87,6 @@ class UINodes extends armory.Trait {
 
 	var mx = 0.0;
 	var my = 0.0;
-	var wh = 300;
 	static var frame = 0;
 	var mdown = false;
 	var mreleased = false;
@@ -92,9 +115,7 @@ class UINodes extends armory.Trait {
 		if (!UITrait.uienabled) return;
 		var keyboard = iron.system.Input.getKeyboard();
 
-		wx = 200;
-		wy = iron.App.h() - wh;
-		if (mouse.x < wx || mouse.y < wy) return;
+		if (mouse.x < wx || mouse.x > wx + ww || mouse.y < wy) return;
 
 		if (ui.isTyping) return;
 
@@ -122,10 +143,8 @@ class UINodes extends armory.Trait {
 	}
 
 	static var nodes = new Nodes();
-
 	static var canvas:TNodeCanvas = null;
-
-	static var bg:kha.Image = null;
+	public static var grid:kha.Image = null;
 
 	function getNodeX():Int {
 		var mouse = iron.system.Input.getMouse();
@@ -137,6 +156,26 @@ class UINodes extends armory.Trait {
 		return Std.int((mouse.y - wy - nodes.PAN_Y()) / nodes.SCALE);
 	}
 
+	public function drawGrid() {
+		var w = ww + 40 * 2;
+		var h = wh + 40 * 2;
+		grid = kha.Image.createRenderTarget(w, h);
+		grid.g2.begin(true, 0xff141414);
+		for (i in 0...Std.int(h / 40) + 1) {
+			grid.g2.color = 0xff303030;
+			grid.g2.drawLine(0, i * 40, w, i * 40);
+			grid.g2.color = 0xff202020;
+			grid.g2.drawLine(0, i * 40 + 20, w, i * 40 + 20);
+		}
+		for (i in 0...Std.int(w / 40) + 1) {
+			grid.g2.color = 0xff303030;
+			grid.g2.drawLine(i * 40, 0, i * 40, h);
+			grid.g2.color = 0xff202020;
+			grid.g2.drawLine(i * 40 + 20, 0, i * 40 + 20, h);
+		}
+		grid.g2.end();
+	}
+
 	function render2D(g:kha.graphics2.Graphics) {
 		if (!show) return;
 		
@@ -145,41 +184,19 @@ class UINodes extends armory.Trait {
 		
 		g.end();
 
-		if (bg == null) {
-			// var w = rt.width;////
-			var w = iron.App.w() - 200;
-			// var h = rt.height;////
-			var h = wh;
-			bg = kha.Image.createRenderTarget(w, h);
-			bg.g2.begin(true, 0xff141414);
-			for (i in 0...Std.int(h / 40) + 1) {
-				bg.g2.color = 0xff303030;
-				bg.g2.drawLine(0, i * 40, w, i * 40);
-				bg.g2.color = 0xff202020;
-				bg.g2.drawLine(0, i * 40 + 20, w, i * 40 + 20);
-			}
-			for (i in 0...Std.int(w / 40) + 1) {
-				bg.g2.color = 0xff303030;
-				bg.g2.drawLine(i * 40, 0, i * 40, h);
-				bg.g2.color = 0xff202020;
-				bg.g2.drawLine(i * 40 + 20, 0, i * 40 + 20, h);
-			}
-			bg.g2.end();
-		}
+		if (grid == null) drawGrid();
 
 		// Start with UI
 		ui.begin(g);
 		// ui.begin(rt.g2); ////
 		
 		// Make window
-		wx = 200;
-		wy = iron.App.h() - wh;
 		var hwin = Id.handle();
-		if (ui.window(hwin, wx, wy, iron.App.w() - 200, wh)) {
+		if (ui.window(hwin, wx, wy, ww, wh)) {
 		// if (ui.window(hwin, 0, 0, rt.width, rt.height)) { ////
 
 			ui.g.color = 0xffffffff;
-			ui.g.drawImage(bg, 0, 0);
+			ui.g.drawImage(grid, (nodes.panX * nodes.SCALE) % 40 - 40, (nodes.panY * nodes.SCALE) % 40 - 40);
 
 			ui.g.font = font;
 			ui.g.fontSize = 42;
@@ -187,8 +204,7 @@ class UINodes extends armory.Trait {
 			// var title = "Material (right-click to add node)";
 			var titlew = ui.g.font.width(42, title);
 			var titleh = ui.g.font.height(42);
-			ui.g.drawString(title, iron.App.w() - 200 - titlew - 20, wh - titleh - 10);
-			// ui.g.drawString(title, rt.width - titlew - 20, rt.height - titleh - 10); ////
+			ui.g.drawString(title, ww - titlew - 20, wh - titleh - 10);
 			
 			// Recompile material on change
 			ui.changed = false;
@@ -202,7 +218,7 @@ class UINodes extends armory.Trait {
 			var numItems = 8;
 			var ph = numItems * 20;
 			var py = popupY;
-			if (py + ph > iron.App.h()) py = iron.App.h() - ph;
+			if (py + ph > arm.App.realh()) py = arm.App.realh() - ph;
 			g.color = 0xff222222;
 			g.fillRect(popupX, py, 120, ph);
 
@@ -328,7 +344,7 @@ class UINodes extends armory.Trait {
 		frag.write('fragColor[0] = vec4(pow(basecol.rgb, vec3(1.0 / 2.2)), occlusion);');
 		frag.write('fragColor[1] = vec4(roughness, metallic, 0.0, 1.0);');
 		if (frag.contains("vec3 texn")) {
-			frag.write('fragColor[2] = vec4(texn.rgb, 1.0);');
+			frag.write('fragColor[2] = vec4(texn.rgb * 0.5 + 0.5, 1.0);');
 		}
 		else {
 			frag.write('fragColor[2] = vec4(0.5, 0.5, 1.0, 1.0);');

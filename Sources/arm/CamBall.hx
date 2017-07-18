@@ -27,8 +27,8 @@ class CamBall extends Trait {
 
 		var mouse = Input.getMouse();
 
-		if (mouse.x < UITrait.ww) return;
-		if (UINodes.show && mouse.y > UINodes.wy) return;
+		if (mouse.x > arm.App.realw() - UITrait.ww) return;
+		if (UINodes.show && mouse.x > UINodes.wx && mouse.x < UINodes.wx + UINodes.ww && mouse.y > UINodes.wy && mouse.y < UINodes.wy + UINodes.wh) return;
 
 		if (mouse.down("left")) {
 			UITrait.dirty = true;

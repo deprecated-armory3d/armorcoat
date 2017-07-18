@@ -16,8 +16,8 @@ class OrbitCamera extends armory.Trait {
 
 			var mouse = armory.system.Input.getMouse();
 
-			if (mouse.x < UITrait.ww) return;
-			if (UINodes.show && mouse.y > UINodes.wy) return;
+			if (mouse.x > arm.App.realw() - UITrait.ww) return;
+			if (UINodes.show && mouse.x > UINodes.wx && mouse.x < UINodes.wx + UINodes.ww && mouse.y > UINodes.wy && mouse.y < UINodes.wy + UINodes.wh) return;
 
 			var keyboard = armory.system.Input.getKeyboard();
 			var camera = cast(object, iron.object.CameraObject);

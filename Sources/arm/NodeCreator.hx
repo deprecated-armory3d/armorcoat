@@ -271,7 +271,7 @@ class NodeCreator {
 						name: "Scale",
 						type: "VALUE",
 						color: 0xffa1a1a1,
-						default_value: 5.0
+						default_value: 1.0
 					}
 				],
 				outputs: [
@@ -374,7 +374,7 @@ class NodeCreator {
 						name: "Scale",
 						type: "VALUE",
 						color: 0xffa1a1a1,
-						default_value: 5.0
+						default_value: 1.0
 					}
 				],
 				outputs: [
@@ -425,7 +425,7 @@ class NodeCreator {
 						name: "Scale",
 						type: "VALUE",
 						color: 0xffa1a1a1,
-						default_value: 5.0
+						default_value: 1.0
 					}
 				],
 				outputs: [
