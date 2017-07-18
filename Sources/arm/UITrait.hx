@@ -70,6 +70,7 @@ class UITrait extends armory.Trait {
 		});
 
 		kha.System.notifyOnDropFiles(function(filePath:String) {
+			filePath = StringTools.rtrim(filePath);
 			if (StringTools.endsWith(filePath, ".obj")) importMesh(filePath);
 			else importAsset(filePath);
 		});
