@@ -19,6 +19,7 @@ class UITrait extends armory.Trait {
 	public static var show = true;
 	public static var dirty = true;
 
+	var dropPath = "";
 	var bundled:Map<String, kha.Image> = new Map();
 	var ui:Zui;
 	var uimodal:Zui;
@@ -70,22 +71,23 @@ class UITrait extends armory.Trait {
 		});
 
 		kha.System.notifyOnDropFiles(function(filePath:String) {
-			filePath = StringTools.rtrim(filePath);
-			if (StringTools.endsWith(filePath, ".obj")) importMesh(filePath);
-			else importAsset(filePath);
+			dropPath = StringTools.rtrim(filePath);
 		});
 	}
 
 	function importAsset(path:String) {
 		if (!StringTools.endsWith(path, ".jpg") &&
 			!StringTools.endsWith(path, ".png") &&
+			!StringTools.endsWith(path, ".k") &&
 			!StringTools.endsWith(path, ".hdr")) return;
 		
 		iron.data.Data.getImage(path, function(image:kha.Image) {
 			var ar = path.split("/");
 			var name = ar[ar.length - 1];
-			assets.push({image: image, name: name, file: path, id: assetId++});
+			var asset:TAsset = {name: name, file: path, id: assetId++};
+			assets.push(asset);
 			assetNames.push(name);
+			Canvas.assetMap.set(asset.id, image);
 			hwnd.redraws = 2;
 		});
 	}
@@ -166,6 +168,13 @@ class UITrait extends armory.Trait {
 	var lastW = 0;
 	var lastH = 0;
 	function render2D(g:kha.graphics2.Graphics) {
+
+		if (dropPath != "") {
+			if (StringTools.endsWith(dropPath, ".obj")) importMesh(dropPath);
+			else importAsset(dropPath);
+			dropPath = "";
+		}
+
 		uienabled = !showFiles;
 		renderUI(g);
 		renderFiles(g);
@@ -354,6 +363,7 @@ class UITrait extends armory.Trait {
 						imgNormal.unload();
 					}
 				}
+
 				var hres = Id.handle({position: textureRes});
 				textureRes = ui.combo(hres, ["1K", "2K", "4K", "8K", "16K", "20K"], "Res", true);
 				// if (hres.changed) {
@@ -404,18 +414,18 @@ class UITrait extends armory.Trait {
 				}
 
 				if (assets.length > 0) {
+					ui.text("(Drag images to canvas)", zui.Zui.Align.Center, 0xff151515);
 					var i = assets.length - 1;
 					while (i >= 0) {
 						var asset = assets[i];
-						if (ui.image(asset.image) == State.Started) {
+						if (ui.image(getImage(asset)) == State.Started) {
 							dragAsset = asset;
 						}
-						ui.row([1/8, 7/8]);
-						var b = ui.button("X");
+						ui.row([7/8, 1/8]);
 						asset.name = ui.textInput(Id.handle().nest(asset.id, {text: asset.name}), "", Right);
 						assetNames[i] = asset.name;
-						if (b) {
-							asset.image.unload();
+						if (ui.button("X")) {
+							getImage(asset).unload();
 							assets.splice(i, 1);
 							assetNames.splice(i, 1);
 						}
@@ -423,7 +433,7 @@ class UITrait extends armory.Trait {
 					}
 				}
 				else {
-					ui.text("(Drag & drop assets here)", zui.Zui.Align.Center, 0xff151515);
+					ui.text("(Drag & drop assets)", zui.Zui.Align.Center, 0xff151515);
 					ui.text("(.png .jpg .hdr .obj)", zui.Zui.Align.Center, 0xff151515);
 				}
 			}
@@ -435,8 +445,14 @@ class UITrait extends armory.Trait {
 		if (dragAsset != null) {
 			UITrait.dirty = true;
 			var mouse = iron.system.Input.getMouse();
-			g.drawScaledImage(dragAsset.image, mouse.x, mouse.y, 128, 128);
+			var ratio = 128 / getImage(dragAsset).width;
+			var h = getImage(dragAsset).height * ratio;
+			g.drawScaledImage(getImage(dragAsset), mouse.x, mouse.y, 128, h);
 		}
+	}
+
+	function getImage(asset:TAsset):kha.Image {
+		return Canvas.assetMap.get(asset.id);
 	}
 
 	var path = '/';

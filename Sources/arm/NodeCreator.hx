@@ -92,14 +92,14 @@ class NodeCreator {
 						color: 0xffc7c729,
 						default_value: [0.8, 0.8, 0.8, 1.0]
 					},
-					// {
-					// 	id: nodes.getSocketId(canvas.nodes),
-					// 	node_id: node_id,
-					// 	name: "Opacity",
-					// 	type: "VALUE",
-					// 	color: 0xffa1a1a1,
-					// 	default_value: 1.0
-					// },
+					{
+						id: nodes.getSocketId(canvas.nodes),
+						node_id: node_id,
+						name: "Opacity",
+						type: "VALUE",
+						color: 0xffa1a1a1,
+						default_value: 1.0
+					},
 					{
 						id: nodes.getSocketId(canvas.nodes),
 						node_id: node_id,

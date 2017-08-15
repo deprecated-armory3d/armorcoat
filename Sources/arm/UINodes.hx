@@ -273,10 +273,12 @@ class UINodes extends armory.Trait {
 		var rough = sout.out_roughness;
 		var met = sout.out_metallic;
 		var occ = sout.out_occlusion;
+		var opac = sout.out_opacity;
 		frag.write('vec3 basecol = $base;');
 		frag.write('float roughness = $rough;');
 		frag.write('float metallic = $met;');
 		frag.write('float occlusion = $occ;');
+		frag.write('float opacity = $opac;');
 	}
 
 	function make_mesh(data:ShaderData, matcon:TMaterialContext):armory.system.ShaderContext {
@@ -293,6 +295,10 @@ class UINodes extends armory.Trait {
 		var frag = con_mesh.make_frag();
 
 		make_base(matcon, con_mesh, vert, frag);
+
+		//if discard_transparent:
+        	var opac = 0.3;//mat_state.material.discard_transparent_opacity
+        	frag.write('if (opacity < $opac) discard;');
 
 		frag.write_header('vec2 octahedronWrap(const vec2 v) {return (1.0 - abs(v.yx)) * (vec2(v.x >= 0.0 ? 1.0 : -1.0, v.y >= 0.0 ? 1.0 : -1.0));}');
 		frag.write_header('float packFloat(const float f1, const float f2) {float index = floor(f1 * 100.0); float alpha = clamp(f2, 0.0, 1.0 - 0.001);return index + alpha;}');
