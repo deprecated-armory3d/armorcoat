@@ -21,8 +21,10 @@ class UINodes extends armory.Trait {
 	var drawMenu = false;
 	var showMenu = false;
 	var hideMenu = false;
-	var popupX = 0;
-	var popupY = 0;
+	var menuCategory = 0;
+	var addNodeButton = false;
+	var popupX = 0.0;
+	var popupY = 0.0;
 
 	var sc:iron.data.ShaderData.ShaderContext = null;
 	public var _matcon:TMaterialContext = null;
@@ -123,10 +125,9 @@ class UINodes extends armory.Trait {
 			mx = mouse.x;
 			my = mouse.y;
 		}
-		else if ((mouse.released("right") && mx == mouse.x && my == mouse.y) || keyboard.started("a")) { // Show menu if canvas was not panned
+		else if (addNodeButton) {
 			showMenu = true;
-			popupX = Std.int(mouse.x);
-			popupY = Std.int(mouse.y);
+			addNodeButton = false;
 		}
 		else if (mouse.released()) {
 			hideMenu = true;
@@ -176,12 +177,13 @@ class UINodes extends armory.Trait {
 		grid.g2.end();
 	}
 
+	@:access(zui.Zui)
 	function render2D(g:kha.graphics2.Graphics) {
 		if (!show) return;
 		
 		if (!UITrait.uienabled && ui.inputRegistered) ui.unregisterInput();
 		if (UITrait.uienabled && !ui.inputRegistered) ui.registerInput();
-		
+
 		g.end();
 
 		if (grid == null) drawGrid();
@@ -205,33 +207,48 @@ class UINodes extends armory.Trait {
 			var titlew = ui.g.font.width(42, title);
 			var titleh = ui.g.font.height(42);
 			ui.g.drawString(title, ww - titlew - 20, wh - titleh - 10);
-			
+
 			// Recompile material on change
 			ui.changed = false;
 			nodes.nodeCanvas(ui, canvas);
+
+			ui.g.color = 0xff111111;
+			ui.g.fillRect(0, 0, ww, 24);
+			ui.g.color = 0xffffffff;
+
+			ui._x = 3;
+			ui._y = 3;
+			ui._w = 105;
+			if (ui.button("Input")) { addNodeButton = true; menuCategory = 0; popupX = wx + ui._x; popupY = wy + ui._y; }
+			ui._x += 105 + 3;
+			ui._y = 3;
+			if (ui.button("Output")) { addNodeButton = true; menuCategory = 1; popupX = wx + ui._x; popupY = wy + ui._y; }
+			ui._x += 105 + 3;
+			ui._y = 3;
+			if (ui.button("Texture")) { addNodeButton = true; menuCategory = 2; popupX = wx + ui._x; popupY = wy + ui._y; }
+			ui._x += 105 + 3;
+			ui._y = 3;
+			if (ui.button("Color")) { addNodeButton = true; menuCategory = 3; popupX = wx + ui._x; popupY = wy + ui._y; }
+			ui._x += 105 + 3;
+			ui._y = 3;
+			if (ui.button("Converter")) { addNodeButton = true; menuCategory = 4; popupX = wx + ui._x; popupY = wy + ui._y; }
 		}
 
 		ui.endWindow();
 
 		if (drawMenu) {
 			
-			var numItems = 8;
-			var ph = numItems * 20;
+			var ph = NodeCreator.numNodes[menuCategory] * 20;
 			var py = popupY;
-			if (py + ph > arm.App.realh()) py = arm.App.realh() - ph;
 			g.color = 0xff222222;
-			g.fillRect(popupX, py, 120, ph);
+			g.fillRect(popupX, py, 105, ph);
 
-			ui.beginLayout(g, popupX, py, 120);
+			ui.beginLayout(g, Std.int(popupX), Std.int(py), 105);
 			
-			NodeCreator.draw(this);
+			NodeCreator.draw(this, menuCategory);
 
 			ui.endLayout();
 		}
-
-		ui.end();
-
-		g.begin(false);
 
 		if (showMenu) {
 			showMenu = false;
@@ -242,6 +259,10 @@ class UINodes extends armory.Trait {
 			hideMenu = false;
 			drawMenu = false;
 		}
+
+		ui.end();
+
+		g.begin(false);
 	}
 
 	function make_base(matcon:TMaterialContext, con_mesh:armory.system.ShaderContext, vert:armory.system.Shader, frag:armory.system.Shader) {
@@ -266,7 +287,14 @@ class UINodes extends armory.Trait {
 		vert.add_out('vec3 eyeDir');
 		vert.add_uniform('vec3 eye', '_cameraPosition');
 		vert.write('eyeDir = eye - wposition;');
+
+		frag.prepend('float dotNV = max(dot(n, vVec), 0.0);');
 		frag.prepend('vec3 vVec = normalize(eyeDir);');
+
+		vert.add_out('vec3 mposition');
+        vert.write_pre = true;
+        vert.write('mposition = pos.xyz;');
+        vert.write_pre = false;
 
 		var sout = Cycles.parse(canvas, con_mesh, vert, frag, null, null, null, matcon);
 		var base = sout.out_basecol;

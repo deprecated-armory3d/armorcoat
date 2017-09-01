@@ -36,7 +36,8 @@ class CamBall extends Trait {
 			// Rotate
 			object.transform.rotate(new Vec4(0, 0, 1), mouse.movementX / 100);
 			object.transform.buildMatrix();
-			object.transform.rotate(object.transform.world.right(), mouse.movementY / 100);
+			// object.transform.rotate(object.transform.world.right(), mouse.movementY / 100);
+			object.transform.rotate(new Vec4(1, 0, 0), mouse.movementY / 100);
 			object.transform.buildMatrix();
 		}
 	}

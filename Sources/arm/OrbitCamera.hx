@@ -1,5 +1,7 @@
 package arm;
 
+import iron.math.Vec4;
+
 class OrbitCamera extends armory.Trait {
 
 	public static var enabled = false;
@@ -25,7 +27,12 @@ class OrbitCamera extends armory.Trait {
 			if (mouse.wheelDelta != 0) {
 				UITrait.dirty = true;
 
-				camera.move(camera.look(), mouse.wheelDelta * (-0.1));
+				var p = camera.transform.loc;
+				var d = Vec4.distance3df(p.x, p.y, p.z, 0, 0, 0);
+				if ((mouse.wheelDelta > 0 && d < 10) ||
+					(mouse.wheelDelta < 0 && d > 1)) {
+					camera.move(camera.look(), mouse.wheelDelta * (-0.1));
+				}
 			}
 
 			// if (mouse.down("middle") || (mouse.down("right") && keyboard.down("space"))) {

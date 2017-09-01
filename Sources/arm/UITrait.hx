@@ -240,7 +240,9 @@ class UITrait extends armory.Trait {
 		
 		if (ui.window(hwnd, arm.App.realw() - ww, 0, ww, arm.App.realh())) {
 
-			if (ui.panel(Id.handle({selected: true}), "PROJECT")) {
+			var htab = Id.handle({position: 0});
+
+			if (ui.tab(htab, "Project")) {
 				// ui.row([1/2, 1/2]);
 				// ui.button("Open");
 				// ui.button("Save");
@@ -386,9 +388,7 @@ class UITrait extends armory.Trait {
 				if (hlayout.changed) resize();
 			}
 
-			ui.separator();
-
-			if (ui.panel(Id.handle({selected: true}), "ASSETS")) {
+			if (ui.tab(htab, "Assets")) {
 
 				var hmesh = Id.handle({position: 2});
 				var meshType = ui.combo(hmesh, meshes, "Mesh", true);
@@ -437,7 +437,6 @@ class UITrait extends armory.Trait {
 					ui.text("(.png .jpg .hdr .obj)", zui.Zui.Align.Center, 0xff151515);
 				}
 			}
-			ui.separator();
 		}
 		ui.end();
 		g.begin(false);
