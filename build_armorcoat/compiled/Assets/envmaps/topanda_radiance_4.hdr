@@ -1,0 +1,7 @@
+#?RADIANCE
+# Output from cmft.
+FORMAT=32-bit_rle_rgbe
+EXPOSURE=1
+
+-Y 16 +X 32
+²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²ó²óLi‘‚Li’‚Li“‚Lj”‚Ki•‚He‚Daˆ‚A\‚}±õw©èr¡ÜmšÐi“ÆdŒ»`‡³^ƒ­]«^‚«`„®c‰´gŽ»l”ÄqœÎx¥Ú®è‡¹÷Gb„‚Kg‹‚Lh‚LhŽ‚Li‚Li‘‚JfŽ‚Jg‘‚If‘‚Eb‚B_Š‚@^ˆ‚?]ˆ‚w°ûp¤åišÑa»X¥OqŒÈø€}°×€t¢Æ€n™»€k”·€s È€±ß€ŽÆû€OoY|žc‰°n™Å{©Ü€°æ†¸óGa‚KfŠ‚Lg‚JfŽ‚o—Ðn˜Õi•×g–Þf˜ãe˜ãb•Ûa“Ó\‹¿Xƒ¬Pv”Ï÷€}¶Ô€k™°€Y€—Öð„¹Ó~°Ð†¾èKk„€V{–€j˜¸€~´Ø€‘Ïø€SvŽ[€eŒ¯k”¼o—Äq˜ÊtœÒo—Ð†³ç‚°ìB]…€9U;Z‹=_‘[ŽÌ€d›Õ€m§Ý€t®à€ƒÂë€t©Ä€e €¨êýy˜–l‡‡e‚_ƒ [„¬b¹s¦ÈÒòOt€[†’€e•ž€jš €‡¾Ø€Š¿á€ˆºã€Roˆ€“Äö†³ç¨Úç}žÍÙ}ÏÙ}ŸÔÛ}Ad”Js¢_‘Ç{ºüOs˜€`„«€k‹®€f€š€™­®~‰vÝî¿~ÎäÃ~Êïð~d‘c…¥^¤c…’t¢²†ÄÝ–ßøRx€€§íîŸÞÖÂº®êæ~€ª­~c‡~¨Úç}Š§t|‡¤s|–¸~|°×|pŽp}‹¾Í}j”º~Ws•’­Õiq‚€ƒ„Ž€‰€€€Ä©‚”ƒRïÜ~×Ï‹~ÕÚ·~Þîå~r~„n|„ÔïÙ~nŠ‹u¡¯}±Ã…¼Ä†µ©}£‹h„jÅõ¸}qŽj}¡Æ‹|Š§t|Ýøp{Ðég{Ïða{{“3|ž¿J|¾ç¦|¡¸º} ¦²~ª–ˆvf€»›{€Ó¨y€•tF€ÈžRv7òËf~óÎ‚~†rP”}[™€YtHäì¹~Øüí~j…ƒk‰m‡jÐù£~«És~”®Z}œ¸\|}B|Ýøp{Ž”T|{‚I|Ëß|{Ëít{~–>|¨¼d|¬¥t}À¨}~×²~¯`€ôÁ~€‹lCÅ–X€€a3€°…>k/™o7²€BÌ’JÕ™I£~9…n:éÏ‰~ÔË•~ÂÊ“~ÀÒ‚~¶Ên~•¨T~…–M}ª¹f|Ÿ§]|Ž”T|¾·{|£Ÿl|‚ƒZ|êù§{|ˆS|¬±l|»¨k}Ò°q~æºv¹“\€€d>“qEØ¡_€Žg9€Å‹F¤o3µx9ÖDö£L€V'€Â†;žo4ˆb4íµj~É¨g~³ªc~Ÿ¢\~€‡L~†‹R}ÕÒˆ|ÑÊ†|¾·{|éÖ |Ë¼Ž|£w|‘l|ŒŽf|¶°{|º£j}Ê§h~Ó©h¥‚P€Þ­i€ù¾s€ÀS€‰`6€É‡G­n7Ây;åŽDP&€ƒR&€Ì‚<«n4”`0þ©[~Î“T~¥ˆR~…zL~ÑÌ€}‰‚W}þê©|ýè¬|éÖ |r[}âÍ¤|»¯‹|©x|¦™q|Å¬x|¨^}£…R~|Kí¹oé«f[5€ê ]ÇƒK¹xB¦f6·m7Ò|=Áo7¹l5£`0ŒS+ŠU-ì•Q~»|G~Œg?~¦†U}‡sL}üÚ™|‡x\}ˆy_}r[}Ü¼|Ò³Š|Ê«|Ê¨v|Ö­t|øÁ{| xI}Ø›\}ŸpB~Ò‘U~„Y4“b9’_8ŠY4ü¢`~ë•W~éQ~íŽO~ñN~åˆJ~Ì{D~µo>~˜`7~þ§`}ÇŠP}ŸuF}€e=}â»w|Ù¸||à¾ˆ|äÂ“|Ü¼|Ú­t|Þ¯t|è³v|ø½y|ˆf?}™oC}¬zG}Ó‘U}ü«d}‘`8~¤l@~³vF~¹zJ~µxI~ªqF~¤mD~šg@~‹^<~‹]:~†Y8~õ§h}Ñ”_}®‚U}ŸxM}ˆkE}è¾z|à¹v|Ú³s|Õ¯r|Ò«q|Ô«s|Ú­t|‚d@}‡f@}ŒiA}“lC}špD}¥wH}²M}¿‡R}ÌW}Ø–\}àœ`}äŸc}ç¡e}ê¤g}è¤h}â¡h}Ùœf}Ì–c}½Ž_}«…[}¢€X}ž|T}˜wQ}‘sM}ŠmI}ƒiE}úÉ„|ñÂ|óÁ~|÷Ã~|ýÅ|‚d@}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}¥|P}
