@@ -1,8 +1,12 @@
 # armorcoat
 
-Node-based material editor for PBR texture authoring. Material nodes are based on [Cycles](https://www.blender.org/features/cycles/). Used in Armory for baking complex materials down into single PBR texture set, written in Haxe and Kha.
+![](./img/man.jpg)
 
-Get the prepackaged [release](https://github.com/armory3d/armorcoat/releases). Alternatively, you can compile and run from sources.
+Node-based material editor for PBR texture authoring. Material nodes are based on [Cycles](https://www.blender.org/features/cycles/). Used in Armory for baking complex materials down into single PBR texture set. Written in Haxe and Kha.
+
+## Download
+
+Get the pre-packaged [binaries](https://github.com/armory3d/armorcoat/releases). Alternatively, you can compile and run from sources.
 
 ## Run
 
