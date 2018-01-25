@@ -70,8 +70,8 @@ class UINodes extends armory.Trait {
 					font = f;
 					var t = Reflect.copy(zui.Themes.dark);
 					t.FILL_WINDOW_BG = true;
-					t._ELEMENT_H = 18;
-					t._BUTTON_H = 16;
+					t.ELEMENT_H = 18;
+					t.BUTTON_H = 16;
 					// ui = new Zui({font: f, theme: t, scaleFactor: 2.5}); ////
 					ui = new Zui({font: f, theme: t, color_wheel: image});
 					ui.scrollEnabled = false;

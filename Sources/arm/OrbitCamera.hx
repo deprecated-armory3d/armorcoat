@@ -28,7 +28,7 @@ class OrbitCamera extends armory.Trait {
 				UITrait.dirty = true;
 
 				var p = camera.transform.loc;
-				var d = Vec4.distance3df(p.x, p.y, p.z, 0, 0, 0);
+				var d = Vec4.distancef(p.x, p.y, p.z, 0, 0, 0);
 				if ((mouse.wheelDelta > 0 && d < 10) ||
 					(mouse.wheelDelta < 0 && d > 1)) {
 					camera.move(camera.look(), mouse.wheelDelta * (-0.1));

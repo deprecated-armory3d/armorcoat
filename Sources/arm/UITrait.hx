@@ -190,7 +190,7 @@ class UITrait extends armory.Trait {
 		// TODO: Texture params get overwritten
 		if (redraws > 0 && UINodes.inst._matcon != null) for (t in UINodes.inst._matcon.bind_textures) t.params_set = null;
 
-		iron.Scene.active.camera.renderPath.ready = redraws > 0;
+		// iron.RenderPath.ready = redraws > 0;
 		redraws--;
 		dirty = false;
 	}
