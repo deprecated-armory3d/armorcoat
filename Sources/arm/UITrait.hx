@@ -80,7 +80,7 @@ class UITrait extends armory.Trait {
 			!StringTools.endsWith(path, ".png") &&
 			!StringTools.endsWith(path, ".k") &&
 			!StringTools.endsWith(path, ".hdr")) return;
-		
+
 		iron.data.Data.getImage(path, function(image:kha.Image) {
 			var ar = path.split("/");
 			var name = ar[ar.length - 1];
@@ -188,7 +188,8 @@ class UITrait extends armory.Trait {
 		if(showFiles || dirty) redraws = 2;
 
 		// TODO: Texture params get overwritten
-		if (redraws > 0 && UINodes.inst._matcon != null) for (t in UINodes.inst._matcon.bind_textures) t.params_set = null;
+		// if (redraws > 0 && UINodes.inst._matcon != null) for (t in UINodes.inst._matcon.bind_textures) t.params_set = null;
+		// (DK) TBindTexture.params_set was removed in bff8d67e09dc05d2a7ada7100f3cff9bbeee9a40
 
 		// iron.RenderPath.ready = redraws > 0;
 		redraws--;
@@ -237,7 +238,7 @@ class UITrait extends armory.Trait {
 		g.end();
 		ui.begin(g);
 		// ui.begin(rt.g2); ////
-		
+
 		if (ui.window(hwnd, arm.App.realw() - ww, 0, ww, arm.App.realh())) {
 
 			var htab = Id.handle({position: 0});
@@ -266,7 +267,7 @@ class UITrait extends armory.Trait {
 						var context = UINodes.inst.make_export();
 						var g4 = imgBaseOcc.g4;
 						g4.begin([imgRoughMet, imgNormal]);
-						
+
 						var object:MeshObject = uvtype == 0 ? cast iron.Scene.active.root.getChild("Plane") : currentObject;
 
 						g4.setPipeline(context.pipeState);
@@ -469,7 +470,7 @@ class UITrait extends armory.Trait {
 		var topRect = Std.int(arm.App.realh() / 2 - modalRectH / 2);
 		var bottomRect = Std.int(arm.App.realh() / 2 + modalRectH / 2);
 		topRect += modalHeaderH;
-		
+
 		g.end();
 		uimodal.begin(g);
 		if (uimodal.window(Id.handle(), leftRect, topRect, modalRectW, modalRectH - 100)) {
@@ -500,13 +501,13 @@ class UITrait extends armory.Trait {
 
 		iron.data.Data.getBlob(path, function(b:kha.Blob) {
 
-			var obj = new iron.format.obj.Loader(b.toString());
-			var pa = new TFloat32Array(obj.indexedVertices.length);
-			for (i in 0...pa.length) pa[i] = obj.indexedVertices[i];
-			var uva = new TFloat32Array(obj.indexedUVs.length);
-			for (i in 0...uva.length) uva[i] = obj.indexedUVs[i];
-			var na = new TFloat32Array(obj.indexedNormals.length);
-			for (i in 0...na.length) na[i] = obj.indexedNormals[i];
+			var obj = new iron.format.obj.Loader(b);
+			var pa = new TFloat32Array(obj.positions.length);
+			for (i in 0...pa.length) pa[i] = obj.positions[i];
+			var uva = new TFloat32Array(obj.uvs.length);
+			for (i in 0...uva.length) uva[i] = obj.uvs[i];
+			var na = new TFloat32Array(obj.normals.length);
+			for (i in 0...na.length) na[i] = obj.normals[i];
 			var ia = new TUint32Array(obj.indices.length);
 			for (i in 0...ia.length) ia[i] = obj.indices[i];
 
